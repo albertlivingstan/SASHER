@@ -1,7 +1,7 @@
 {
   "projectId": "mythic-impact-fv9wh",
   "appId": "1:767132066403:web:5e20f97766ec2557064e56",
-  "apiKey": "AIzaSyClEZ8LT66frcNRXSMnQR8LD4muLg4hIsw",
+  "apiKey": "YOUR_FIREBASE_API_KEY",
   "authDomain": "mythic-impact-fv9wh.firebaseapp.com",
   "firestoreDatabaseId": "ai-studio-sasheradaptivefa-afe4cb41-caf0-4a00-a0d7-4d8097a5495d",
   "storageBucket": "mythic-impact-fv9wh.firebasestorage.app",

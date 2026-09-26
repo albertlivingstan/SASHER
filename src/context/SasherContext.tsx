@@ -14,6 +14,7 @@ import {
   CompletedOrder
 } from '../types';
 import { INITIAL_PRODUCTS } from '../data/products';
+import { DEFAULT_PAST_ORDERS } from '../data/defaultOrders';
 import { eyeTracker, GazeCallbackPayload } from '../services/eyeTracker';
 import { projectSuggestionService, SuggestedProject, GazeProductAnalysis } from '../services/projectSuggestionService';
 import { useAuth } from './AuthContext';
@@ -161,7 +162,7 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   ]);
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-  const [completedOrders, setCompletedOrders] = useState<CompletedOrder[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<CompletedOrder[]>(DEFAULT_PAST_ORDERS);
 
   // Real-time Firestore sync when user signs in with Google
   useEffect(() => {
@@ -180,29 +181,42 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const unsubscribeOrders = subscribeToUserOrders(user.id, (storedOrders) => {
       if (storedOrders.length > 0) {
-        setCompletedOrders(storedOrders.map(o => ({
-          id: o.orderId,
-          orderNumber: o.orderNumber,
-          timestamp: o.createdAt ? new Date(o.createdAt).getTime() : Date.now(),
-          items: [],
-          subtotal: o.totalAmount,
-          discount: 0,
-          tax: 0,
-          shipping: 0,
-          total: o.totalAmount,
-          currency: 'USD',
-          paymentMethod: (o.paymentMethod as any) || 'CARD',
-          paymentReference: `REF-${o.orderId}`,
-          shippingAddress: {
-            fullName: user.name || 'Client',
-            email: user.email || '',
-            street: 'Default Address',
-            city: 'New York',
-            postalCode: '10001',
-            country: 'US'
-          },
-          journalHash: `hash-${o.orderId}`
-        })));
+        setCompletedOrders(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const existingOrderNums = new Set(prev.map(p => p.orderNumber));
+          const newConverted: CompletedOrder[] = storedOrders
+            .filter(o => !existingIds.has(o.orderId) && !existingOrderNums.has(o.orderNumber))
+            .map(o => ({
+              id: o.orderId,
+              orderNumber: o.orderNumber,
+              timestamp: o.createdAt ? new Date(o.createdAt).getTime() : Date.now(),
+              items: [
+                {
+                  product: INITIAL_PRODUCTS[0],
+                  quantity: o.itemCount || 1,
+                  size: 'M'
+                }
+              ],
+              subtotal: o.totalAmount,
+              discount: 0,
+              tax: Math.round(o.totalAmount * 0.12),
+              shipping: 0,
+              total: o.totalAmount,
+              currency: '₹',
+              paymentMethod: (o.paymentMethod as any) || 'CARD',
+              paymentReference: `REF-${o.orderId}`,
+              shippingAddress: {
+                fullName: user.name || 'Valued Client',
+                email: user.email || 'client@sasher.luxury',
+                street: '124 Horizon Boulevard, Suite 8',
+                city: 'Bangalore',
+                postalCode: '560001',
+                country: 'India'
+              },
+              journalHash: `0x${o.orderId}a8b7c6d5e4f3`
+            }));
+          return [...newConverted, ...prev];
+        });
       }
     });
 
@@ -519,8 +533,12 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       };
 
+      const inWishlist = wishlistIds.has(product.id);
       return {
         ...product,
+        wishlist: inWishlist,
+        wishlistStatus: (inWishlist ? 'in_wishlist' : 'none') as 'in_wishlist' | 'none',
+        isWishlisted: inWishlist,
         explanation,
         isGazeInfluenced: isGazeHit
       };
@@ -754,10 +772,23 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => clearTimeout(t);
   }, [recentAdaptiveNotification]);
 
+  // Enrich product collection with live wishlist status
+  const enrichedProducts: Product[] = useMemo(() => {
+    return products.map(p => {
+      const inWishlist = wishlistIds.has(p.id);
+      return {
+        ...p,
+        wishlist: inWishlist,
+        wishlistStatus: (inWishlist ? 'in_wishlist' : 'none') as 'in_wishlist' | 'none',
+        isWishlisted: inWishlist
+      };
+    });
+  }, [products, wishlistIds]);
+
   return (
     <SasherContext.Provider
       value={{
-        products,
+        products: enrichedProducts,
         recommendedProducts,
         activeCategory,
         setActiveCategory,

@@ -27,7 +27,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
-  const isWishlisted = wishlistIds.has(product.id);
+  const isWishlisted = Boolean(product.wishlist || product.isWishlisted || wishlistIds.has(product.id));
   const isBeingGazed = currentGazeTarget?.productId === product.id;
   const isInterestConfirmed = isBeingGazed && currentGazeTarget?.status === 'interest_confirmed';
 

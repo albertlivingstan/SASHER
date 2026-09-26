@@ -17,9 +17,17 @@ import {
   Scissors,
   Copy,
   Download,
-  FileText
+  FileText,
+  Truck,
+  RotateCcw,
+  Headphones,
+  FileDown
 } from 'lucide-react';
 import { PaymentMethodType, CompletedOrder } from '../../types';
+import { downloadInvoicePdf, openPrintInvoicePdf } from '../../services/invoicePdfService';
+import { OrderTrackingModal } from '../shipping/OrderTrackingModal';
+import { OrderReturnModal } from '../returns/OrderReturnModal';
+import { CustomerSupportModal } from '../support/CustomerSupportModal';
 
 export const CheckoutModal: React.FC = () => {
   const { 
@@ -106,6 +114,11 @@ export const CheckoutModal: React.FC = () => {
   const [confirmedOrder, setConfirmedOrder] = useState<CompletedOrder | null>(null);
   const [showInvoiceSlide, setShowInvoiceSlide] = useState(false);
 
+  // Post-purchase modals
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+
   if (!isCheckoutModalOpen) return null;
 
   const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
@@ -169,137 +182,197 @@ export const CheckoutModal: React.FC = () => {
 
   const handleDownloadInvoice = () => {
     if (!confirmedOrder) return;
-    const text = `========================================\n         BIZY MEDIA / CODEXR INVOICE\n========================================\nOrder Ref: ${confirmedOrder.orderNumber}\nDate: ${new Date(confirmedOrder.timestamp).toLocaleDateString()}\nClient: ${shippingAddress.fullName}\nPayment: ${confirmedOrder.paymentMethod} (PAID)\n----------------------------------------\nITEMS:\n${confirmedOrder.items.map(i => `- ${i.product.name} (x${i.quantity}) : ₹${i.product.price * i.quantity}`).join('\n')}\n----------------------------------------\nSubtotal: ₹${confirmedOrder.subtotal}\nDiscount: -₹${confirmedOrder.discount}\nTax (12%): ₹${confirmedOrder.tax}\nTOTAL PAID: ₹${confirmedOrder.total}\n========================================\nJournal Hash: ${confirmedOrder.journalHash}\nThank you for your research partnership!\n========================================`;
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${confirmedOrder.orderNumber}-invoice.txt`;
-    a.click();
+    downloadInvoicePdf(confirmedOrder);
+  };
+
+  const handlePrintInvoice = () => {
+    if (!confirmedOrder) return;
+    openPrintInvoicePdf(confirmedOrder);
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 font-sans">
-      <div className="relative w-full max-w-5xl bg-[#121316] border border-[#27272a] rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        
-        {/* Top Gradient Accent */}
-        <div className="h-1.5 w-full" style={{ background: 'var(--brand-gradient)' }} />
+    <>
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 font-sans">
+        <div className="relative w-full max-w-5xl bg-[#121316] border border-[#27272a] rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          
+          {/* Top Gradient Accent */}
+          <div className="h-1.5 w-full" style={{ background: 'var(--brand-gradient)' }} />
 
-        {/* Modal Header */}
-        <div className="p-5 sm:p-6 border-b border-[#27272a] flex items-center justify-between bg-[#18191d]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff6b1a]/20 to-[#e2a876]/20 border border-[#ff6b1a]/40 text-[#ff6b1a] flex items-center justify-center shadow-lg">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase px-2 py-0.5 rounded bg-[#ff6b1a]/15 text-[#ff6b1a] font-bold">
-                  CODEXR CHECKOUT v3
-                </span>
-                <span className="text-xs text-[#10b981] font-mono flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
-                  <span>Secure SSL</span>
-                </span>
+          {/* Modal Header */}
+          <div className="p-5 sm:p-6 border-b border-[#27272a] flex items-center justify-between bg-[#18191d]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff6b1a]/20 to-[#e2a876]/20 border border-[#ff6b1a]/40 text-[#ff6b1a] flex items-center justify-center shadow-lg">
+                <Lock className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-semibold text-[#f5f5f7] mt-0.5">
-                {confirmedOrder ? 'Transaction Authorized & Invoice Generated' : 'Payment Checkout Animation'}
-              </h2>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono uppercase px-2 py-0.5 rounded bg-[#ff6b1a]/15 text-[#ff6b1a] font-bold">
+                    SASHER ATELIER CHECKOUT
+                  </span>
+                  <span className="text-xs text-[#10b981] font-mono flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
+                    <span>Secure 256-Bit SSL</span>
+                  </span>
+                </div>
+                <h2 className="text-lg font-semibold text-[#f5f5f7] mt-0.5">
+                  {confirmedOrder ? 'Transaction Authorized & Official Tax Invoice Generated' : 'Secure Luxury Checkout & Gateway'}
+                </h2>
+              </div>
             </div>
+
+            <button
+              onClick={handleClose}
+              className="p-2 text-[#71717a] hover:text-[#f5f5f7] bg-[#121316] hover:bg-[#27272a] rounded-xl transition-colors cursor-pointer border border-[#27272a]"
+              aria-label="Close checkout"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          <button
-            onClick={handleClose}
-            className="p-2 text-[#71717a] hover:text-[#f5f5f7] bg-[#121316] hover:bg-[#27272a] rounded-xl transition-colors cursor-pointer border border-[#27272a]"
-            aria-label="Close checkout"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* CONFIRMATION SCREEN WITH SLIDING INVOICE DOCUMENT ANIMATION */}
-        {confirmedOrder ? (
-          <div className="p-8 sm:p-12 flex flex-col items-center justify-center min-h-[580px] relative overflow-hidden bg-[#0c0d0f]">
-            
-            <div className="text-center z-20 space-y-2 mb-6">
-              <div className="w-16 h-16 rounded-full bg-[#10b981]/15 text-[#10b981] border-2 border-[#10b981]/40 mx-auto flex items-center justify-center shadow-xl">
-                <CheckCircle2 className="w-8 h-8" />
+          {/* CONFIRMATION SCREEN WITH SLIDING INVOICE DOCUMENT ANIMATION */}
+          {confirmedOrder ? (
+            <div className="p-6 sm:p-10 flex flex-col items-center justify-center min-h-[580px] relative overflow-hidden bg-[#0c0d0f] space-y-6">
+              
+              <div className="text-center z-20 space-y-2">
+                <div className="w-16 h-16 rounded-full bg-[#10b981]/15 text-[#10b981] border-2 border-[#10b981]/40 mx-auto flex items-center justify-center shadow-xl">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <span className="text-xs font-mono uppercase text-[#10b981] font-bold tracking-wider">
+                  Payment Successful & Cryptographically Sealed
+                </span>
+                <h3 className="text-2xl font-semibold text-[#f5f5f7]">Thank You, {shippingAddress.fullName}!</h3>
+                <p className="text-xs text-[#a1a1aa] max-w-sm mx-auto">
+                  Your luxury order of <strong className="text-[#ff6b1a]">₹{confirmedOrder.total.toLocaleString('en-IN')}</strong> was authorized. An official branded PDF invoice has been generated.
+                </p>
               </div>
-              <span className="text-xs font-mono uppercase text-[#10b981] font-bold tracking-wider">
-                Payment Successful & Cryptographically Sealed
-              </span>
-              <h3 className="text-2xl font-semibold text-[#f5f5f7]">Thank You, {shippingAddress.fullName}!</h3>
-              <p className="text-xs text-[#a1a1aa] max-w-sm mx-auto">
-                Your payment of <strong className="text-[#ff6b1a]">₹{confirmedOrder.total.toLocaleString('en-IN')}</strong> was successfully processed.
-              </p>
-            </div>
 
-            {/* Sliding Invoice Document Animation Container */}
-            <div className="relative w-full max-w-md h-72 flex items-center justify-center z-10 overflow-hidden">
-              <div 
-                className={`absolute w-80 bg-[#fafaf8] text-[#1a1a1a] rounded-2xl shadow-2xl p-6 font-mono border border-gray-300 transition-all duration-700 ease-out ${
-                  showInvoiceSlide ? 'translate-y-0 opacity-100 scale-100 rotate-0' : '-translate-y-36 opacity-0 scale-90 -rotate-2'
-                }`}
-              >
-                <div className="absolute top-3 right-3 border-2 border-red-500 rounded px-2 py-0.5 text-red-500 font-bold text-[9px] rotate-6">
-                  PAID ✓
-                </div>
-                
-                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-dashed border-gray-300">
-                  <FileText className="w-5 h-5 text-[#ff6b1a]" />
-                  <div>
-                    <h4 className="text-xs font-bold text-[#0b4f8a]">BIZY MEDIA INVOICE</h4>
-                    <span className="text-[9px] text-gray-500">{confirmedOrder.orderNumber}</span>
+              {/* Sliding Invoice Document Animation Container */}
+              <div className="relative w-full max-w-md h-76 flex items-center justify-center z-10 overflow-hidden">
+                <div 
+                  className={`absolute w-84 bg-[#fafaf8] text-[#1a1a1a] rounded-2xl shadow-2xl p-6 font-mono border border-gray-300 transition-all duration-700 ease-out ${
+                    showInvoiceSlide ? 'translate-y-0 opacity-100 scale-100 rotate-0' : '-translate-y-36 opacity-0 scale-90 -rotate-2'
+                  }`}
+                >
+                  <div className="absolute top-3 right-3 border-2 border-[#10b981] rounded px-2 py-0.5 text-[#10b981] font-bold text-[9px] rotate-6 bg-[#10b981]/10">
+                    PAID IN FULL ✓
                   </div>
-                </div>
+                  
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-dashed border-gray-300">
+                    <FileText className="w-5 h-5 text-[#ff6b1a]" />
+                    <div>
+                      <h4 className="text-xs font-bold text-[#141416] tracking-wider">SASHER ATELIER INVOICE</h4>
+                      <span className="text-[9px] text-gray-500">{confirmedOrder.orderNumber}</span>
+                    </div>
+                  </div>
 
-                <div className="space-y-1.5 text-[11px] text-gray-700">
-                  <div className="flex justify-between">
-                    <span>Client:</span>
-                    <span className="font-semibold text-gray-900">{shippingAddress.fullName}</span>
+                  <div className="space-y-1.5 text-[11px] text-gray-700">
+                    <div className="flex justify-between">
+                      <span>Billed To:</span>
+                      <span className="font-semibold text-gray-900 truncate max-w-[140px]">{shippingAddress.fullName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Payment Method:</span>
+                      <span className="font-semibold">{String(confirmedOrder.paymentMethod).toUpperCase()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Courier Service:</span>
+                      <span className="text-[#ff6b1a] font-semibold">Express Air Priority</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-gray-900 pt-1.5 border-t border-gray-200">
+                      <span>Total Paid:</span>
+                      <span className="text-[#ff6b1a]">₹{confirmedOrder.total.toLocaleString('en-IN')}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Payment Method:</span>
-                    <span className="font-semibold">{confirmedOrder.paymentMethod}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-200">
-                    <span>Total Paid:</span>
-                    <span className="text-[#ff6b1a]">₹{confirmedOrder.total.toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
 
-                <div className="mt-4 pt-3 border-t border-dashed border-gray-300 flex items-center justify-between">
-                  <span className="text-[9px] text-gray-500">Secure Ledger Verified</span>
-                  <button
-                    onClick={handleDownloadInvoice}
-                    className="px-3 py-1.5 bg-[#ff6b1a] hover:bg-[#e05a10] text-[#09090b] rounded-lg text-[10px] font-bold flex items-center gap-1.5 cursor-pointer shadow"
-                  >
-                    <Download className="w-3 h-3" />
-                    <span>Download</span>
-                  </button>
+                  <div className="mt-4 pt-3 border-t border-dashed border-gray-300 flex items-center justify-between">
+                    <span className="text-[9px] text-gray-500 font-mono">NFC Authenticated</span>
+                    <button
+                      onClick={handleDownloadInvoice}
+                      className="px-3 py-1.5 bg-[#ff6b1a] hover:bg-[#e05a10] text-[#09090b] rounded-lg text-[10px] font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all hover:scale-105"
+                      title="Download Vector PDF Invoice"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Download PDF</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Bottom Actions */}
-            <div className="z-20 flex items-center gap-3 pt-4">
-              <button
-                onClick={() => window.print()}
-                className="px-4 py-2.5 bg-[#1e2026] hover:bg-[#2a2d35] border border-[#3f3f46] text-[#f5f5f7] rounded-xl text-xs font-mono font-semibold flex items-center gap-2 cursor-pointer shadow"
-              >
-                <Printer className="w-4 h-4 text-[#ff6b1a]" />
-                <span>Print receipt</span>
-              </button>
-              <button
-                onClick={handleClose}
-                className="px-5 py-2.5 bg-[#ff6b1a] hover:bg-[#e05a10] text-[#09090b] rounded-xl text-xs font-mono font-bold flex items-center gap-2 cursor-pointer shadow-lg"
-              >
-                <span>Continue Shopping</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+              {/* Post-Purchase Live Services Grid: Shipping, Returns, Support */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-xl z-20">
+                {/* 1. Track Live */}
+                <button
+                  type="button"
+                  onClick={() => setIsTrackingModalOpen(true)}
+                  className="p-3 bg-[#18191d] hover:bg-[#202227] border border-[#27272a] hover:border-[#ff6b1a] rounded-2xl text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1 text-[#ff6b1a]">
+                    <Truck className="w-4 h-4" />
+                    <span className="text-xs font-bold font-mono">Live Tracking</span>
+                  </div>
+                  <span className="text-[10px] text-[#71717a] block leading-tight">
+                    Real-time carrier milestones & flight tracking
+                  </span>
+                </button>
 
-          </div>
-        ) : (
+                {/* 2. 30-Day Returns */}
+                <button
+                  type="button"
+                  onClick={() => setIsReturnModalOpen(true)}
+                  className="p-3 bg-[#18191d] hover:bg-[#202227] border border-[#27272a] hover:border-[#10b981] rounded-2xl text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1 text-[#10b981]">
+                    <RotateCcw className="w-4 h-4" />
+                    <span className="text-xs font-bold font-mono">30-Day Returns</span>
+                  </div>
+                  <span className="text-[10px] text-[#71717a] block leading-tight">
+                    Free home pickup & zero restocking fee
+                  </span>
+                </button>
+
+                {/* 3. Customer Care */}
+                <button
+                  type="button"
+                  onClick={() => setIsSupportModalOpen(true)}
+                  className="p-3 bg-[#18191d] hover:bg-[#202227] border border-[#27272a] hover:border-[#2997ff] rounded-2xl text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1 text-[#2997ff]">
+                    <Headphones className="w-4 h-4" />
+                    <span className="text-xs font-bold font-mono">Client Care</span>
+                  </div>
+                  <span className="text-[10px] text-[#71717a] block leading-tight">
+                    24/7 Concierge, tickets & hotlines
+                  </span>
+                </button>
+              </div>
+
+              {/* Bottom Actions */}
+              <div className="z-20 flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={handleDownloadInvoice}
+                  className="px-4 py-2.5 bg-[#ff6b1a] hover:bg-[#e05a10] text-[#09090b] rounded-xl text-xs font-mono font-bold flex items-center gap-2 cursor-pointer shadow-lg transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download PDF Invoice</span>
+                </button>
+                <button
+                  onClick={handlePrintInvoice}
+                  className="px-4 py-2.5 bg-[#1e2026] hover:bg-[#2a2d35] border border-[#3f3f46] text-[#f5f5f7] rounded-xl text-xs font-mono font-semibold flex items-center gap-2 cursor-pointer shadow"
+                >
+                  <Printer className="w-4 h-4 text-[#ff6b1a]" />
+                  <span>Print Official Invoice</span>
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="px-5 py-2.5 bg-[#27272a] hover:bg-[#323236] text-[#f5f5f7] rounded-xl text-xs font-mono font-bold flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <span>Continue Shopping</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
+            </div>
+          ) : (
           /* CHECKOUT FORM SCREEN WITH 3D CARD FLIP & FIELD SWITCH ANIMATION */
           <form onSubmit={handlePay} className="grid grid-cols-1 lg:grid-cols-12 max-h-[82vh] overflow-y-auto">
             
@@ -765,5 +838,32 @@ export const CheckoutModal: React.FC = () => {
         )}
       </div>
     </div>
+
+    {/* Post-Purchase Tracking Modal */}
+    <OrderTrackingModal
+      order={confirmedOrder}
+      isOpen={isTrackingModalOpen}
+      onClose={() => setIsTrackingModalOpen(false)}
+      onOpenReturn={(order) => setIsReturnModalOpen(true)}
+      onOpenSupport={() => setIsSupportModalOpen(true)}
+    />
+
+    {/* Post-Purchase Returns Modal */}
+    <OrderReturnModal
+      order={confirmedOrder}
+      isOpen={isReturnModalOpen}
+      onClose={() => setIsReturnModalOpen(false)}
+      onOpenSupport={() => setIsSupportModalOpen(true)}
+    />
+
+    {/* Post-Purchase Customer Support Modal */}
+    <CustomerSupportModal
+      isOpen={isSupportModalOpen}
+      onClose={() => setIsSupportModalOpen(false)}
+      onOpenTracking={(order) => setIsTrackingModalOpen(true)}
+      onOpenReturn={(order) => setIsReturnModalOpen(true)}
+      recentOrders={confirmedOrder ? [confirmedOrder] : []}
+    />
+  </>
   );
 };

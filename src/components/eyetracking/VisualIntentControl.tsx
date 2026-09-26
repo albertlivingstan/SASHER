@@ -33,21 +33,21 @@ export const VisualIntentControl: React.FC = () => {
 
   return (
     <div className="relative inline-block font-sans" ref={popoverRef}>
-      {/* Compact Eye Icon Button (approx 20-24px, subtle hover/click animation) */}
+      {/* Compact Eye Icon Button (20px icon, refined visual-intent status) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         data-magnetic
-        className={`p-2 rounded-full transition-all duration-200 cursor-pointer relative flex items-center justify-center border ${
+        className={`p-2 rounded-full transition-all duration-150 cursor-pointer relative flex items-center justify-center shrink-0 ${
           isEyeTrackingActive 
-            ? 'bg-[#18191d] border-[#30d158]/60 text-[#30d158] shadow-[0_0_12px_rgba(48,209,88,0.25)] hover:border-[#30d158]' 
-            : 'bg-[#18191d] border-[#27272a] text-[#71717a] hover:text-[#f4f4f5] hover:border-[#3f3f46]'
+            ? 'text-[#ff6b1a] bg-[#ff6b1a]/10 border border-[#ff6b1a]/40 hover:border-[#ff6b1a] shadow-[0_0_10px_rgba(255,107,26,0.18)]' 
+            : 'text-[#8e8e93] hover:text-[#f4f4f5] border border-white/[0.08] hover:bg-white/[0.04]'
         }`}
-        title={isEyeTrackingActive ? "Visual Intent: ACTIVE (Click for telemetry)" : "Visual Intent: PAUSED (Click to view)"}
+        title={isEyeTrackingActive ? "Visual Intent Gaze AI: ACTIVE (Click for telemetry)" : "Visual Intent Gaze AI: PAUSED (Click to view)"}
         aria-label="Visual Intent Control"
       >
-        <Eye className={`w-4 h-4 transition-transform hover:scale-110 ${isEyeTrackingActive ? 'text-[#30d158] animate-pulse' : 'text-[#71717a]'}`} />
+        <Eye className="w-5 h-5 transition-transform group-hover:scale-105" strokeWidth={1.75} />
         {isEyeTrackingActive && (
-          <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#30d158] ring-2 ring-[#0b0b0d] animate-ping" />
+          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#10b981] ring-2 ring-[#0a0a0c]" />
         )}
       </button>
 

@@ -46,6 +46,9 @@ export interface Product {
     warmth: number;
   };
   collaborativeScore?: number;
+  wishlist?: boolean;
+  wishlistStatus?: 'in_wishlist' | 'none' | boolean;
+  isWishlisted?: boolean;
 }
 
 export type InteractionType = 

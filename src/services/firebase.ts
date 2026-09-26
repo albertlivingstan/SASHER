@@ -1,7 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import rawConfig from '../../firebase-applet-config.json';
+
+// Load API key from environment variable to prevent public GitHub secret leaks
+const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || (rawConfig.apiKey !== 'YOUR_FIREBASE_API_KEY' ? rawConfig.apiKey : '');
+
+const firebaseConfig = {
+  ...rawConfig,
+  apiKey: apiKey || '',
+};
 
 const app = initializeApp(firebaseConfig);
 // CRITICAL: The app will break without specifying firestoreDatabaseId

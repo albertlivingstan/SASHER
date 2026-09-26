@@ -26,6 +26,7 @@ import {
 import { GAZE_TRACKING_ERROR_AUDIT, correctedGazeEngine } from '../../services/gazeTrackingEngine';
 import { projectSuggestionService, SuggestedProject, GazeProductAnalysis } from '../../services/projectSuggestionService';
 import { Product } from '../../types';
+import { LiveEyeTrackerAnalyticsPanel } from './LiveEyeTrackerAnalyticsPanel';
 
 export const GazeTrackingStudioView: React.FC = () => {
   const {
@@ -39,7 +40,7 @@ export const GazeTrackingStudioView: React.FC = () => {
     addToCart
   } = useSasher();
 
-  const [activeTab, setActiveTab] = useState<'live_demo' | 'audit' | 'project_studio'>('live_demo');
+  const [activeTab, setActiveTab] = useState<'live_demo' | 'live_analytics' | 'audit' | 'project_studio'>('live_demo');
   const [selectedProduct, setSelectedProduct] = useState<Product>(products[0]);
   const [dwellTime, setDwellTime] = useState<number>(0);
   const [isDwellLocked, setIsDwellLocked] = useState<boolean>(false);
@@ -548,6 +549,7 @@ export const GazeTrackingStudioView: React.FC = () => {
         <div className="flex items-center gap-1.5 p-1 bg-[#18181b] border border-[#27272a] rounded-xl self-start md:self-auto text-xs font-mono">
           {[
             { id: 'live_demo', label: 'Live Gaze HUD' },
+            { id: 'live_analytics', label: 'Live Analytics Telemetry' },
             { id: 'audit', label: 'Error Audit (7 Fixes)' },
             { id: 'project_studio', label: 'Curated Looks Studio' }
           ].map((tab) => (
@@ -866,6 +868,36 @@ export const GazeTrackingStudioView: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TAB: LIVE EYE TRACKER ANALYTICS & TELEMETRY STREAM */}
+      {activeTab === 'live_analytics' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="p-6 bg-[#121316] border border-[#27272a] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-mono uppercase tracking-wider text-[#ff6b1a] font-bold block mb-1">
+                REAL-TIME SENSOR STREAM & ATTENTION MAPPING
+              </span>
+              <h3 className="text-xl font-bold text-[#f5f5f7]">
+                Continuous Visual Saccade & Fixation Classification
+              </h3>
+              <p className="text-xs text-[#a1a1aa] mt-1 max-w-2xl leading-relaxed">
+                Live stream measuring pixel coordinates, saccadic angular velocity, stability confidence, and temporal dwell weights feeding the Transformer recommendation model.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleEyeTracking}
+                className="px-4 py-2 bg-[#ff6b1a] text-[#09090b] rounded-xl text-xs font-mono font-bold cursor-pointer shadow hover:bg-[#e05a10] transition-colors"
+              >
+                {isEyeTrackingActive ? 'Eye-Tracker Active' : 'Start Eye-Tracker'}
+              </button>
+            </div>
+          </div>
+
+          <LiveEyeTrackerAnalyticsPanel />
         </div>
       )}
 

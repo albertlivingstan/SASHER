@@ -18,13 +18,19 @@ import { TrustStatusPanel } from './components/security/TrustStatusPanel';
 import { Footer } from './components/footer/Footer';
 import { LiveTelemetryHub } from './components/analytics/LiveTelemetryHub';
 import { CustomCursor } from './components/ui/CustomCursor';
+import { GazeReticleOverlay } from './components/eyetracking/GazeReticleOverlay';
 import { GoogleSignInModal } from './components/auth/GoogleSignInModal';
 import { CheckoutModal } from './components/checkout/CheckoutModal';
+import { OrderTrackingModal } from './components/shipping/OrderTrackingModal';
+import { OrderReturnModal } from './components/returns/OrderReturnModal';
+import { CustomerSupportModal } from './components/support/CustomerSupportModal';
 import { GazeTrackingStudioView } from './components/eyetracking/GazeTrackingStudioView';
 import { PlatformAnalyticsView } from './components/analytics/PlatformAnalyticsView';
 import { EvaluationAnalyticsView } from './components/analytics/EvaluationAnalyticsView';
 import { FashionAssistantChatbot } from './components/assistant/FashionAssistantChatbot';
-import { RecommendedProduct } from './types';
+import { UserProfileModal } from './components/account/UserProfileModal';
+import { INITIAL_PRODUCTS } from './data/products';
+import { RecommendedProduct, CompletedOrder } from './types';
 import { Sparkles, Eye, X } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
@@ -37,8 +43,70 @@ const MainLayout: React.FC = () => {
     dismissAdaptiveNotification,
     isProjectDrawerOpen,
     setIsProjectDrawerOpen,
-    activeSuggestedProject
+    activeSuggestedProject,
+    completedOrders
   } = useSasher();
+
+  // Global post-purchase & care modals
+  const [isGlobalSupportOpen, setIsGlobalSupportOpen] = useState(false);
+  const [isGlobalTrackingOpen, setIsGlobalTrackingOpen] = useState(false);
+  const [isGlobalReturnOpen, setIsGlobalReturnOpen] = useState(false);
+  const [activeOrderForModal, setActiveOrderForModal] = useState<CompletedOrder | null>(null);
+
+  // User Account Profile & Order History Modal State
+  const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
+  const [userProfileTab, setUserProfileTab] = useState<'orders' | 'profile' | 'calibration' | 'security'>('orders');
+
+  const handleOpenUserProfile = (tab: 'orders' | 'profile' = 'orders') => {
+    setUserProfileTab(tab);
+    setIsUserProfileOpen(true);
+  };
+
+  const getResolvedOrder = (): CompletedOrder => {
+    if (activeOrderForModal) return activeOrderForModal;
+    if (completedOrders.length > 0) return completedOrders[0];
+    return {
+      id: 'demo-ord-latest',
+      orderNumber: 'ORD-SA9428-IN',
+      timestamp: Date.now() - (18 * 3600000),
+      items: [],
+      subtotal: 48500,
+      discount: 7275,
+      tax: 4947,
+      shipping: 0,
+      total: 46172,
+      currency: '₹',
+      paymentMethod: 'CARD',
+      paymentReference: 'PAY-SA9428-VERIFIED',
+      shippingAddress: {
+        fullName: 'Valued Client',
+        email: 'concierge@sasher.luxury',
+        street: '124 Horizon Boulevard, Suite 8',
+        city: 'Bangalore',
+        postalCode: '560001',
+        country: 'India'
+      },
+      journalHash: '0x7f9a12c8b0e3f4d1e2a87600b3f5e921d74c0a18'
+    };
+  };
+
+  const handleOpenGlobalTracking = (order?: CompletedOrder) => {
+    if (order) {
+      setActiveOrderForModal(order);
+    } else {
+      setActiveOrderForModal(getResolvedOrder());
+    }
+    setIsGlobalTrackingOpen(true);
+  };
+
+  const handleOpenGlobalReturn = (order?: CompletedOrder) => {
+    if (order) {
+      setActiveOrderForModal(order);
+    } else {
+      setActiveOrderForModal(getResolvedOrder());
+    }
+    setIsGlobalReturnOpen(true);
+  };
 
   const scrollToCatalog = () => {
     setCurrentTab('discover');
@@ -58,11 +126,22 @@ const MainLayout: React.FC = () => {
       {/* Custom Cursor & Glow with Magnetic Reaction */}
       <CustomCursor />
 
+      {/* Visual Intent Gaze Reticle & Real-Time Dwell Indicator */}
+      <GazeReticleOverlay />
+
       {/* Google Authentication Modal */}
       <GoogleSignInModal />
 
-      {/* 3-Zone Global Navbar */}
-      <Navbar currentTab={currentTab} setCurrentTab={setCurrentTab} />
+      {/* 3-Zone Global Navbar with Client Support & Tracking Access */}
+      <Navbar 
+        currentTab={currentTab} 
+        setCurrentTab={setCurrentTab} 
+        onOpenSupport={() => setIsGlobalSupportOpen(true)}
+        onOpenTracking={() => handleOpenGlobalTracking()}
+        onOpenReturn={() => handleOpenGlobalReturn()}
+        onOpenProfile={handleOpenUserProfile}
+        onOpenOrderHistory={() => handleOpenUserProfile('orders')}
+      />
 
       {/* Modals & Slide-out Panels */}
       <CalibrationModal />
@@ -83,6 +162,55 @@ const MainLayout: React.FC = () => {
       <WhyRecommendedModal />
       <CartDrawer />
       <CheckoutModal />
+
+      {/* User Account Profile & Order History Modal */}
+      <UserProfileModal
+        isOpen={isUserProfileOpen}
+        onClose={() => setIsUserProfileOpen(false)}
+        initialTab={userProfileTab}
+        onOpenTracking={(order) => handleOpenGlobalTracking(order)}
+        onOpenReturn={(order) => handleOpenGlobalReturn(order)}
+        onSelectProduct={(productId) => {
+          setIsUserProfileOpen(false);
+          const found = INITIAL_PRODUCTS.find(p => p.id === productId);
+          if (found) setSelectedProductForModal(found as RecommendedProduct);
+        }}
+      />
+
+      {/* Global Live Tracking Modal */}
+      <OrderTrackingModal
+        order={activeOrderForModal || getResolvedOrder()}
+        isOpen={isGlobalTrackingOpen}
+        onClose={() => setIsGlobalTrackingOpen(false)}
+        onOpenReturn={(order) => {
+          setIsGlobalTrackingOpen(false);
+          handleOpenGlobalReturn(order);
+        }}
+        onOpenSupport={() => {
+          setIsGlobalTrackingOpen(false);
+          setIsGlobalSupportOpen(true);
+        }}
+      />
+
+      {/* Global Returns Modal */}
+      <OrderReturnModal
+        order={activeOrderForModal || getResolvedOrder()}
+        isOpen={isGlobalReturnOpen}
+        onClose={() => setIsGlobalReturnOpen(false)}
+        onOpenSupport={() => {
+          setIsGlobalReturnOpen(false);
+          setIsGlobalSupportOpen(true);
+        }}
+      />
+
+      {/* Global Customer Support Modal */}
+      <CustomerSupportModal
+        isOpen={isGlobalSupportOpen}
+        onClose={() => setIsGlobalSupportOpen(false)}
+        onOpenTracking={(order) => handleOpenGlobalTracking(order)}
+        onOpenReturn={(order) => handleOpenGlobalReturn(order)}
+        recentOrders={completedOrders.length > 0 ? completedOrders : [getResolvedOrder()]}
+      />
 
       {/* Animated Fashion Assistant Chatbot (Section 7, 8, 9) */}
       <FashionAssistantChatbot
@@ -189,7 +317,14 @@ const MainLayout: React.FC = () => {
       </main>
 
       {/* Editorial Footer */}
-      <Footer onSelectTab={(tab) => setCurrentTab(tab)} />
+      <Footer 
+        onSelectTab={(tab) => setCurrentTab(tab)} 
+        onOpenSupport={() => setIsGlobalSupportOpen(true)}
+        onOpenTracking={() => handleOpenGlobalTracking()}
+        onOpenReturn={() => handleOpenGlobalReturn()}
+        onOpenProfile={handleOpenUserProfile}
+        onOpenOrderHistory={() => handleOpenUserProfile('orders')}
+      />
     </div>
   );
 };

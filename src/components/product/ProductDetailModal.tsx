@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RecommendedProduct, Product } from '../../types';
 import { useSasher } from '../../context/SasherContext';
+import { useAuth } from '../../context/AuthContext';
 import { ProductResearchDeepDive } from './ProductResearchDeepDive';
 import { JulianLaurentWalkTalk } from '../assistant/JulianLaurentWalkTalk';
 import { feedbackService, ProductFeedback, ProductRatingSummary } from '../../services/feedbackService';
@@ -19,7 +20,9 @@ import {
   Activity,
   ArrowRight,
   Send,
-  AlertCircle
+  AlertCircle,
+  Database,
+  Loader2
 } from 'lucide-react';
 
 interface ProductDetailModalProps {
@@ -44,12 +47,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     addToCart, 
     currentGazeTarget 
   } = useSasher();
+  const { isAuthenticated, user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<ModalTab>('overview');
   const [selectedSize, setSelectedSize] = useState('M');
   const [isTechDetailsOpen, setIsTechDetailsOpen] = useState(false);
   const [addedAnimation, setAddedAnimation] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [wishlistSyncing, setWishlistSyncing] = useState(false);
+  const [wishlistToast, setWishlistToast] = useState<string | null>(null);
 
   // User Feedback state
   const [userRating, setUserRating] = useState<number>(0);
@@ -75,7 +81,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   if (!product) return null;
 
-  const isWishlisted = wishlistIds.has(product.id);
+  const isWishlisted = Boolean(product.wishlist || product.isWishlisted || wishlistIds.has(product.id));
+
+  const handleToggleWishlist = () => {
+    if (!product) return;
+    setWishlistSyncing(true);
+    toggleWishlist(product.id);
+    const willBeWishlisted = !isWishlisted;
+    if (willBeWishlisted) {
+      setWishlistToast(isAuthenticated ? 'Saved to Cloud Firestore' : 'Added to Wishlist');
+    } else {
+      setWishlistToast('Removed from Wishlist');
+    }
+    setTimeout(() => {
+      setWishlistToast(null);
+    }, 3200);
+    setTimeout(() => {
+      setWishlistSyncing(false);
+    }, 250);
+  };
+
   const isGazed = currentGazeTarget?.productId === product.id;
   const explanation = product.explanation || {
     matchScore: 94,
@@ -152,6 +177,27 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           
           {/* LEFT: Large Product Image Gallery */}
           <div className="md:w-1/2 bg-[#18191d] relative min-h-[380px] md:min-h-full flex items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-[#27272a]">
+            {/* Wishlist Status Quick Action */}
+            <button
+              onClick={handleToggleWishlist}
+              disabled={wishlistSyncing}
+              className={`absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md border text-xs font-medium transition-all cursor-pointer shadow-lg ${
+                isWishlisted
+                  ? 'bg-[#ff6b1a]/20 border-[#ff6b1a] text-[#ff6b1a]'
+                  : 'bg-[#0c0d0e]/85 border-[#27272a] text-[#f5f5f7] hover:border-[#ff6b1a]/70'
+              }`}
+              aria-label={isWishlisted ? "In Wishlist (Click to remove)" : "Add to Wishlist"}
+              title={isAuthenticated ? "Synced to Cloud Firestore" : "Add to Wishlist"}
+            >
+              {wishlistSyncing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#ff6b1a]" />
+              ) : (
+                <Heart className={`w-3.5 h-3.5 transition-transform ${isWishlisted ? 'fill-current text-[#ff6b1a] scale-110' : 'text-[#a1a1aa]'}`} />
+              )}
+              <span className="text-[11px] font-mono">
+                {isWishlisted ? 'In Wishlist' : 'Add to Wishlist'}
+              </span>
+            </button>
             {!imageFailed ? (
               <img
                 src={product.imageUrl}
@@ -505,41 +551,77 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
                 </div>
 
-                {/* Actions: Add to Cart & Wishlist */}
-                <div className="flex items-center gap-3 pt-4 border-t border-[#27272a]/60">
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={addedAnimation}
-                    className={`flex-1 py-3.5 px-6 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${
-                      addedAnimation
-                        ? 'bg-[#10b981] text-[#09090b]'
-                        : 'bg-[#f4f4f5] hover:bg-white text-[#09090b]'
-                    }`}
-                  >
-                    {addedAnimation ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>Added to Bag</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-4 h-4" />
-                        <span>Add to Bag &middot; {product.currency}{product.price.toLocaleString('en-IN')}</span>
-                      </>
-                    )}
-                  </button>
+                {/* Actions: Add to Cart & Add to Wishlist */}
+                <div className="space-y-3 pt-4 border-t border-[#27272a]/60">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Add to Bag Button */}
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={addedAnimation}
+                      className={`flex-1 py-3.5 px-6 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${
+                        addedAnimation
+                          ? 'bg-[#10b981] text-[#09090b]'
+                          : 'bg-[#f4f4f5] hover:bg-white text-[#09090b] shadow-md hover:shadow-lg'
+                      }`}
+                    >
+                      {addedAnimation ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Added to Bag</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag className="w-4 h-4" />
+                          <span>Add to Bag &middot; {product.currency}{product.price.toLocaleString('en-IN')}</span>
+                        </>
+                      )}
+                    </button>
 
-                  <button
-                    onClick={() => toggleWishlist(product.id)}
-                    className={`p-3.5 rounded-xl border transition-colors cursor-pointer ${
-                      isWishlisted
-                        ? 'border-[#ff6b1a] bg-[#ff6b1a]/10 text-[#ff6b1a]'
-                        : 'border-[#27272a] hover:border-[#3f3f46] text-[#a1a1aa] hover:text-[#f4f4f5]'
-                    }`}
-                    aria-label="Wishlist"
-                  >
-                    <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
-                  </button>
+                    {/* Prominent Add to Wishlist Button with Firestore Persistence */}
+                    <button
+                      onClick={handleToggleWishlist}
+                      disabled={wishlistSyncing}
+                      className={`py-3.5 px-5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-200 cursor-pointer flex items-center justify-center gap-2.5 border ${
+                        isWishlisted
+                          ? 'border-[#ff6b1a] bg-[#ff6b1a]/15 text-[#ff6b1a] hover:bg-[#ff6b1a]/25'
+                          : 'border-[#27272a] hover:border-[#ff6b1a]/70 bg-[#18191d] hover:bg-[#202126] text-[#f4f4f5]'
+                      }`}
+                      aria-label={isWishlisted ? "In Wishlist (Click to remove)" : "Add to Wishlist"}
+                      title={isAuthenticated ? "Persisted directly to Cloud Firestore under your account" : "Saved in session. Sign in with Google for cloud sync."}
+                    >
+                      {wishlistSyncing ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#ff6b1a]" />
+                      ) : (
+                        <Heart className={`w-4 h-4 transition-transform duration-200 ${isWishlisted ? 'fill-current scale-110' : ''}`} />
+                      )}
+                      <span className="whitespace-nowrap font-mono">
+                        {isWishlisted ? 'Saved in Wishlist' : 'Add to Wishlist'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Firestore Persistence Status and Live Toast */}
+                  <div className="flex flex-wrap items-center justify-between text-[11px] font-mono text-[#71717a] px-1 gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Database className="w-3 h-3 text-[#ff6b1a]" />
+                      <span>
+                        {isAuthenticated 
+                          ? `Firestore: Syncing to /users/${user?.id.slice(0, 8)}.../wishlist`
+                          : 'Firestore: Sign in with Google to sync wishlist across devices'}
+                      </span>
+                    </div>
+                    {wishlistToast ? (
+                      <span className="text-[#10b981] font-semibold flex items-center gap-1 animate-in fade-in">
+                        <Check className="w-3 h-3" />
+                        <span>{wishlistToast}</span>
+                      </span>
+                    ) : isWishlisted ? (
+                      <span className="text-[#ff6b1a] font-medium flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        <span>Wishlist Active</span>
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </>
             ) : (
