@@ -1,0 +1,134 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Health check / connection test endpoint
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Global hardened helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerified() && request.auth.uid == userId;
+    }
+
+    // Validation Blueprints
+    function isValidUser(data, userId) {
+      return data.keys().hasAll(['id', 'email', 'displayName']) &&
+        data.keys().hasOnly(['id', 'email', 'displayName', 'photoURL', 'calibrationScore', 'savedPreferences', 'createdAt', 'updatedAt']) &&
+        data.id == userId &&
+        data.id is string && data.id.size() <= 128 &&
+        data.email is string && data.email.size() <= 256 &&
+        data.displayName is string && data.displayName.size() <= 128 &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 512)) &&
+        (!('calibrationScore' in data) || (data.calibrationScore is number && data.calibrationScore >= 0 && data.calibrationScore <= 100)) &&
+        (!('savedPreferences' in data) || (data.savedPreferences is list && data.savedPreferences.size() <= 20));
+    }
+
+    function isValidWishlistItem(data, userId, productId) {
+      return data.keys().hasAll(['productId', 'userId', 'productName', 'category', 'price']) &&
+        data.keys().hasOnly(['productId', 'userId', 'productName', 'category', 'price', 'addedAt']) &&
+        data.userId == userId &&
+        data.productId == productId &&
+        data.productName is string && data.productName.size() <= 128 &&
+        data.category is string && data.category.size() <= 64 &&
+        data.price is number && data.price >= 0 &&
+        (!('addedAt' in data) || (data.addedAt is string && data.addedAt.size() <= 64));
+    }
+
+    function isValidOrder(data, userId, orderId) {
+      return data.keys().hasAll(['orderId', 'orderNumber', 'userId', 'totalAmount', 'itemCount', 'paymentMethod', 'status']) &&
+        data.keys().hasOnly(['orderId', 'orderNumber', 'userId', 'totalAmount', 'itemCount', 'paymentMethod', 'status', 'createdAt']) &&
+        data.userId == userId &&
+        data.orderId == orderId &&
+        data.orderNumber is string && data.orderNumber.size() <= 64 &&
+        data.totalAmount is number && data.totalAmount >= 0 &&
+        data.itemCount is number && data.itemCount >= 1 &&
+        data.paymentMethod is string && data.paymentMethod.size() <= 64 &&
+        data.status in ['completed', 'processing'] &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    function isValidSessionState(data, userId) {
+      return data.keys().hasAll(['userId', 'primaryCategory', 'confidence', 'totalInteractions']) &&
+        data.keys().hasOnly(['userId', 'primaryCategory', 'confidence', 'totalInteractions', 'trendDescription', 'updatedAt']) &&
+        data.userId == userId &&
+        data.primaryCategory is string && data.primaryCategory.size() <= 64 &&
+        data.confidence is number && data.confidence >= 0 && data.confidence <= 1 &&
+        data.totalInteractions is number && data.totalInteractions >= 0 &&
+        (!('trendDescription' in data) || (data.trendDescription is string && data.trendDescription.size() <= 256)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // User Profile Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isValidId(userId) && isVerifiedOwner(userId) && isValidUser(incoming(), userId);
+      allow update: if isValidId(userId) && isVerifiedOwner(userId) && isValidUser(incoming(), userId) &&
+                    incoming().id == existing().id && incoming().email == existing().email;
+      allow delete: if isValidId(userId) && isVerifiedOwner(userId);
+
+      // Wishlist Subcollection
+      match /wishlist/{productId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(productId) && isVerifiedOwner(userId) &&
+                      isValidWishlistItem(incoming(), userId, productId);
+        allow update: if isValidId(userId) && isValidId(productId) && isVerifiedOwner(userId) &&
+                      isValidWishlistItem(incoming(), userId, productId) &&
+                      incoming().userId == existing().userId &&
+                      incoming().productId == existing().productId;
+        allow delete: if isValidId(userId) && isValidId(productId) && isVerifiedOwner(userId);
+      }
+
+      // Orders Subcollection (Append-only immutability)
+      match /orders/{orderId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(orderId) && isVerifiedOwner(userId) &&
+                      isValidOrder(incoming(), userId, orderId);
+        allow update: if false;
+        allow delete: if false;
+      }
+
+      // Session Subcollection
+      match /session/{docId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(docId) && isVerifiedOwner(userId) &&
+                      isValidSessionState(incoming(), userId);
+        allow update: if isValidId(userId) && isValidId(docId) && isVerifiedOwner(userId) &&
+                      isValidSessionState(incoming(), userId) &&
+                      incoming().userId == existing().userId;
+        allow delete: if isValidId(userId) && isValidId(docId) && isVerifiedOwner(userId);
+      }
+    }
+  }
+}

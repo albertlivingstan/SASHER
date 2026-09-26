@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { X, ShieldCheck, Check, Sparkles, ArrowRight } from 'lucide-react';
+import { X, ShieldCheck, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 
 export const GoogleLogoIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -24,16 +24,9 @@ export const GoogleLogoIcon: React.FC<{ className?: string }> = ({ className = '
 );
 
 export const GoogleSignInModal: React.FC = () => {
-  const { isSignInModalOpen, closeSignInModal, signInWithGoogle, isLoading } = useAuth();
-  const [selectedEmail, setSelectedEmail] = useState<string>('albert87g@gmail.com');
-  const [isCustomMode, setIsCustomMode] = useState<boolean>(false);
-  const [customInput, setCustomInput] = useState<string>('');
+  const { isSignInModalOpen, closeSignInModal, signInWithGoogle, isLoading, authError } = useAuth();
 
   if (!isSignInModalOpen) return null;
-
-  const handleSignIn = async (email: string) => {
-    await signInWithGoogle(email);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000000]/75 backdrop-blur-md animate-in fade-in duration-200">
@@ -63,113 +56,64 @@ export const GoogleSignInModal: React.FC = () => {
               Sign in with Google
             </h3>
             <p className="text-xs text-[#a1a1a6]">
-              Sync your adaptive fashion profile & visual intent
+              Firebase Auth & Cloud Firestore Persistence
             </p>
           </div>
         </div>
 
-        {/* Description / Value Proposition */}
+        {/* Value Proposition */}
         <div className="p-3.5 bg-[#1c1c1f] rounded-xl border border-[#27272a] text-xs text-[#a1a1a6] space-y-2 mb-5">
           <div className="flex items-center gap-2 text-[#f5f5f7] font-medium">
             <Sparkles className="w-3.5 h-3.5 text-[#ff6b1a]" />
-            <span>Personalized Adaptive Experience</span>
+            <span>Cross-Device Attention Profile</span>
           </div>
           <p className="leading-relaxed text-[11px]">
-            Signing in saves your calibrated gaze preferences, aesthetic similarity vectors, and wishlist across sessions with strict zero-third-party disclosure.
+            Signing in with your Google account persists your calibrated gaze weights, wishlist, and session recommendations in secure Cloud Firestore with zero third-party disclosure.
           </p>
         </div>
 
-        {/* Quick Accounts Chooser */}
-        <div className="space-y-2.5 mb-5">
-          <span className="text-[11px] font-mono tracking-wider uppercase text-[#71717a] block">
-            Choose an account
-          </span>
-
-          {/* Primary Recommended Account */}
-          <button
-            onClick={() => handleSignIn('albert87g@gmail.com')}
-            disabled={isLoading}
-            className="w-full p-3 rounded-xl border border-[#27272a] hover:border-[#ff6b1a] bg-[#18181b] hover:bg-[#1f2024] transition-all flex items-center justify-between group cursor-pointer text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#ff6b1a] to-[#2997ff] flex items-center justify-center text-white font-bold text-sm shadow">
-                A
-              </div>
-              <div>
-                <span className="text-sm font-semibold text-[#f5f5f7] block group-hover:text-[#ff6b1a] transition-colors">
-                  Albert G.
-                </span>
-                <span className="text-xs text-[#a1a1a6] font-mono">
-                  albert87g@gmail.com
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[#ff6b1a]/15 text-[#ff6b1a] border border-[#ff6b1a]/30">
-                Current
-              </span>
-              <ArrowRight className="w-4 h-4 text-[#71717a] group-hover:text-[#ff6b1a] transition-transform group-hover:translate-x-0.5" />
-            </div>
-          </button>
-
-          {/* Alternate Account Option */}
-          <button
-            onClick={() => handleSignIn('albert.researcher@gmail.com')}
-            disabled={isLoading}
-            className="w-full p-3 rounded-xl border border-[#27272a] hover:border-[#27272a]/90 bg-[#141416] hover:bg-[#18181b] transition-all flex items-center justify-between group cursor-pointer text-left opacity-80 hover:opacity-100"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#27272a] flex items-center justify-center text-[#f5f5f7] font-semibold text-sm">
-                R
-              </div>
-              <div>
-                <span className="text-sm font-medium text-[#f5f5f7] block">
-                  Albert (Research Lab)
-                </span>
-                <span className="text-xs text-[#71717a] font-mono">
-                  albert.researcher@gmail.com
-                </span>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-[#71717a] group-hover:text-[#f5f5f7] transition-transform group-hover:translate-x-0.5" />
-          </button>
-        </div>
-
-        {/* Custom Email Input Toggle */}
-        {!isCustomMode ? (
-          <button
-            onClick={() => setIsCustomMode(true)}
-            className="text-xs text-[#2997ff] hover:text-[#52a9ff] transition-colors mb-5 block font-medium cursor-pointer"
-          >
-            Use another Google account
-          </button>
-        ) : (
-          <div className="mb-5 space-y-2">
-            <div className="flex items-center gap-2">
-              <input
-                type="email"
-                placeholder="name@gmail.com"
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                className="flex-1 bg-[#18181b] border border-[#27272a] rounded-xl px-3 py-2 text-xs font-mono text-[#f5f5f7] focus:outline-none focus:border-[#2997ff]"
-              />
-              <button
-                onClick={() => customInput && handleSignIn(customInput)}
-                className="px-3.5 py-2 bg-[#f5f5f7] text-[#0b0b0d] font-semibold text-xs rounded-xl hover:bg-white transition-colors cursor-pointer"
-              >
-                Sign In
-              </button>
+        {/* Error notification if any */}
+        {authError && (
+          <div className="mb-4 p-3 rounded-xl bg-[#ff453a]/10 border border-[#ff453a]/30 flex items-start gap-2.5 text-[#ff453a] text-xs">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="leading-tight">
+              <span className="font-medium block mb-0.5">Authentication Note</span>
+              <span>{authError}</span>
             </div>
           </div>
         )}
+
+        {/* Google Sign-in Action Button */}
+        <div className="space-y-3 mb-5">
+          <button
+            onClick={() => signInWithGoogle()}
+            disabled={isLoading}
+            className="w-full py-3 px-4 rounded-xl border border-[#3f3f46] hover:border-[#ff6b1a] bg-[#ffffff] hover:bg-[#f5f5f7] text-[#1c1c1f] transition-all flex items-center justify-center gap-3 group cursor-pointer shadow-lg hover:shadow-xl font-medium text-sm disabled:opacity-50"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin text-[#1c1c1f]" />
+                <span>Connecting to Google...</span>
+              </>
+            ) : (
+              <>
+                <GoogleLogoIcon className="w-5 h-5" />
+                <span>Continue with Google</span>
+              </>
+            )}
+          </button>
+          <p className="text-center text-[10px] text-[#71717a] font-mono">
+            Direct popup authentication via Firebase Auth
+          </p>
+        </div>
 
         {/* Footer Security Badges */}
         <div className="pt-4 border-t border-[#27272a] flex items-center justify-between text-[11px] text-[#71717a]">
           <div className="flex items-center gap-1.5 text-[#30d158]">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>OAuth 2.0 Secure Session</span>
+            <span>OAuth 2.0 & Firestore TLS 1.3</span>
           </div>
-          <span className="text-[10px]">Privacy & Terms protected</span>
+          <span className="text-[10px]">Zero-Trust Encrypted</span>
         </div>
       </div>
     </div>

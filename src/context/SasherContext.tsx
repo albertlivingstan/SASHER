@@ -16,6 +16,15 @@ import {
 import { INITIAL_PRODUCTS } from '../data/products';
 import { eyeTracker, GazeCallbackPayload } from '../services/eyeTracker';
 import { projectSuggestionService, SuggestedProject, GazeProductAnalysis } from '../services/projectSuggestionService';
+import { useAuth } from './AuthContext';
+import { 
+  saveWishlistItemToFirestore, 
+  removeWishlistItemFromFirestore, 
+  subscribeToUserWishlist, 
+  saveUserOrderToFirestore, 
+  subscribeToUserOrders, 
+  saveUserSessionToFirestore 
+} from '../services/firestoreStorage';
 
 interface SasherContextType {
   products: Product[];
@@ -104,6 +113,7 @@ const INITIAL_CATEGORY_DISTRIBUTION: Record<CategoryType, number> = {
 };
 
 export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isAuthenticated, updateCalibrationScore } = useAuth();
   const [products] = useState<Product[]>(INITIAL_PRODUCTS);
   const [activeCategory, setActiveCategory] = useState<CategoryType>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,7 +127,7 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Eye-tracking state
   const [isEyeTrackingActive, setIsEyeTrackingActive] = useState<boolean>(true);
   const [isCalibrated, setIsCalibrated] = useState<boolean>(true);
-  const [calibrationScore, setCalibrationScore] = useState<number>(94);
+  const [calibrationScore, setCalibrationScore] = useState<number>(() => user?.calibrationScore ?? 94);
   const [isCalibrationModalOpen, setIsCalibrationModalOpen] = useState<boolean>(false);
   const [currentGazeTarget, setCurrentGazeTarget] = useState<GazeTarget | null>(null);
   const [lastGazeCoordinates, setLastGazeCoordinates] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -152,6 +162,55 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [completedOrders, setCompletedOrders] = useState<CompletedOrder[]>([]);
+
+  // Real-time Firestore sync when user signs in with Google
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    if (typeof user.calibrationScore === 'number') {
+      setCalibrationScore(user.calibrationScore);
+      eyeTracker.setCalibrationScore(user.calibrationScore);
+    }
+
+    const unsubscribeWishlist = subscribeToUserWishlist(user.id, (ids) => {
+      if (ids.length > 0) {
+        setWishlistIds(new Set(ids));
+      }
+    });
+
+    const unsubscribeOrders = subscribeToUserOrders(user.id, (storedOrders) => {
+      if (storedOrders.length > 0) {
+        setCompletedOrders(storedOrders.map(o => ({
+          id: o.orderId,
+          orderNumber: o.orderNumber,
+          timestamp: o.createdAt ? new Date(o.createdAt).getTime() : Date.now(),
+          items: [],
+          subtotal: o.totalAmount,
+          discount: 0,
+          tax: 0,
+          shipping: 0,
+          total: o.totalAmount,
+          currency: 'USD',
+          paymentMethod: (o.paymentMethod as any) || 'CARD',
+          paymentReference: `REF-${o.orderId}`,
+          shippingAddress: {
+            fullName: user.name || 'Client',
+            email: user.email || '',
+            street: 'Default Address',
+            city: 'New York',
+            postalCode: '10001',
+            country: 'US'
+          },
+          journalHash: `hash-${o.orderId}`
+        })));
+      }
+    });
+
+    return () => {
+      unsubscribeWishlist();
+      unsubscribeOrders();
+    };
+  }, [isAuthenticated, user?.id, user?.calibrationScore]);
 
   // Compute Dynamic Weights based on session depth & eye tracking
   const dynamicWeights: DynamicWeights = useMemo(() => {
@@ -502,17 +561,23 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return selected;
   }, [products, dynamicWeights, sessionIntent, interactions, currentGazeTarget, anomalyState.fallbackActive]);
 
-  // Wishlist toggle
+  // Wishlist toggle with Firestore persistence
   const toggleWishlist = (productId: string) => {
+    const prod = products.find(p => p.id === productId);
     setWishlistIds(prev => {
       const next = new Set(prev);
       const isAdding = !next.has(productId);
       if (isAdding) {
         next.add(productId);
+        if (isAuthenticated && user?.id && prod) {
+          saveWishlistItemToFirestore(user.id, prod.id, prod.name, prod.category, prod.price).catch(console.error);
+        }
       } else {
         next.delete(productId);
+        if (isAuthenticated && user?.id) {
+          removeWishlistItemFromFirestore(user.id, productId).catch(console.error);
+        }
       }
-      const prod = products.find(p => p.id === productId);
       if (prod && isAdding) {
         recordInteraction('WISHLIST', prod.id, prod.category);
       }
@@ -572,6 +637,9 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsCalibrated(true);
     eyeTracker.setCalibrationScore(score);
     setIsCalibrationModalOpen(false);
+    if (isAuthenticated && user?.id) {
+      updateCalibrationScore(score).catch(console.error);
+    }
     setRecentAdaptiveNotification(`Visual calibration completed (${score}% accuracy). Tracking active.`);
   };
 
@@ -648,17 +716,34 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const completeOrder = (order: CompletedOrder) => {
     setCompletedOrders(prev => [order, ...prev]);
+    if (isAuthenticated && user?.id) {
+      saveUserOrderToFirestore(user.id, order).catch(console.error);
+    }
     recordInteraction(
       'PURCHASE', 
       order.items[0]?.product.id || 'ord-01', 
       order.items[0]?.product.category || 'Outerwear'
     );
-    setRecentAdaptiveNotification(`Payment authorized. Order ${order.orderNumber} placed successfully.`);
+    setRecentAdaptiveNotification(`Payment authorized. Order ${order.orderNumber} placed and saved to your account.`);
   };
 
   const clearCart = () => {
     setCart([]);
   };
+
+  // Sync session intent state to Firestore (debounced)
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id || sessionIntent.totalInteractions === 0) return;
+    const timer = setTimeout(() => {
+      saveUserSessionToFirestore(user.id, {
+        primaryCategory: sessionIntent.primaryCategory,
+        confidence: sessionIntent.confidence,
+        totalInteractions: sessionIntent.totalInteractions,
+        trendDescription: sessionIntent.trendDescription
+      }).catch(console.error);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, user?.id, sessionIntent.primaryCategory, sessionIntent.confidence, sessionIntent.totalInteractions, sessionIntent.trendDescription]);
 
   // Auto-dismiss toast
   useEffect(() => {
