@@ -86,8 +86,11 @@ class JulianSpeechService {
         if (onEnd) onEnd();
       };
 
-      utterance.onerror = (e) => {
-        console.warn('SpeechSynthesis error:', e);
+      utterance.onerror = (e: SpeechSynthesisErrorEvent) => {
+        // Normal speech cancellation/interruption or browser audio permission policies should not trigger warnings
+        if (e.error !== 'canceled' && e.error !== 'interrupted' && e.error !== 'not-allowed') {
+          // Silent recovery without flooding console
+        }
         this.currentUtterance = null;
         if (onError) onError();
         if (onEnd) onEnd();

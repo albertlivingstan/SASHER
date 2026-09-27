@@ -18,7 +18,8 @@ import {
   HelpCircle,
   Eye,
   Smile,
-  Volume2
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 
 interface FashionAssistantChatbotProps {
@@ -38,6 +39,7 @@ export const FashionAssistantChatbot: React.FC<FashionAssistantChatbotProps> = (
   const [inputText, setInputText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [isVoiceMuted, setIsVoiceMuted] = useState(true);
   const [emotion, setEmotion] = useState<ConsultantEmotion>('welcoming');
   
   const [messages, setMessages] = useState<AssistantMessage[]>([
@@ -92,23 +94,25 @@ export const FashionAssistantChatbot: React.FC<FashionAssistantChatbotProps> = (
         const greeting = assistantService.getProductContextGreeting(activeModalProduct);
         setMessages(prev => [...prev, complimentPrefix, greeting]);
 
-        julianSpeechService.speak(
-          greeting.text,
-          () => setIsSpeaking(true),
-          () => {
-            setIsSpeaking(false);
-            setEmotion('welcoming');
-          },
-          () => {
-            setIsSpeaking(false);
-            setEmotion('welcoming');
-          }
-        );
+        if (isOpen && !isVoiceMuted) {
+          julianSpeechService.speak(
+            greeting.text,
+            () => setIsSpeaking(true),
+            () => {
+              setIsSpeaking(false);
+              setEmotion('welcoming');
+            },
+            () => {
+              setIsSpeaking(false);
+              setEmotion('welcoming');
+            }
+          );
+        }
       }, 700);
 
       return () => clearTimeout(timer);
     }
-  }, [activeModalProduct]);
+  }, [activeModalProduct, isOpen, isVoiceMuted]);
 
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
@@ -137,18 +141,20 @@ export const FashionAssistantChatbot: React.FC<FashionAssistantChatbotProps> = (
       setEmotion('analyzing');
       setMessages(prev => [...prev, response]);
 
-      julianSpeechService.speak(
-        response.text,
-        () => setIsSpeaking(true),
-        () => {
-          setIsSpeaking(false);
-          setEmotion('welcoming');
-        },
-        () => {
-          setIsSpeaking(false);
-          setEmotion('welcoming');
-        }
-      );
+      if (!isVoiceMuted) {
+        julianSpeechService.speak(
+          response.text,
+          () => setIsSpeaking(true),
+          () => {
+            setIsSpeaking(false);
+            setEmotion('welcoming');
+          },
+          () => {
+            setIsSpeaking(false);
+            setEmotion('welcoming');
+          }
+        );
+      }
     } catch {
       setIsThinking(false);
       setEmotion('welcoming');
@@ -241,14 +247,42 @@ export const FashionAssistantChatbot: React.FC<FashionAssistantChatbotProps> = (
 
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setIsMinimized(!isMinimized)}
+                onClick={() => {
+                  if (!isVoiceMuted) {
+                    julianSpeechService.stop();
+                    setIsSpeaking(false);
+                  }
+                  setIsVoiceMuted(!isVoiceMuted);
+                }}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  !isVoiceMuted 
+                    ? 'text-[#ff6b1a] bg-[#ff6b1a]/15 hover:bg-[#ff6b1a]/25' 
+                    : 'text-[#71717a] hover:text-[#f5f5f7] hover:bg-[#27272a]'
+                }`}
+                title={isVoiceMuted ? 'Enable Voice Consultation' : 'Mute Voice Consultation'}
+                aria-label={isVoiceMuted ? 'Enable Voice' : 'Mute Voice'}
+              >
+                {!isVoiceMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={() => {
+                  if (!isMinimized) {
+                    julianSpeechService.stop();
+                    setIsSpeaking(false);
+                  }
+                  setIsMinimized(!isMinimized);
+                }}
                 className="p-1.5 text-[#71717a] hover:text-[#f5f5f7] rounded-lg transition-colors cursor-pointer"
                 aria-label={isMinimized ? "Maximize chatbot" : "Minimize chatbot"}
               >
                 {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  julianSpeechService.stop();
+                  setIsSpeaking(false);
+                  setIsOpen(false);
+                }}
                 className="p-1.5 text-[#71717a] hover:text-[#f5f5f7] rounded-lg transition-colors cursor-pointer"
                 aria-label="Close chatbot"
               >

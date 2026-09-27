@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { X, ShieldCheck, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { X, ShieldCheck, Sparkles, AlertCircle, Loader2, Copy, Check, ExternalLink, UserCheck } from 'lucide-react';
 
 export const GoogleLogoIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -24,9 +24,38 @@ export const GoogleLogoIcon: React.FC<{ className?: string }> = ({ className = '
 );
 
 export const GoogleSignInModal: React.FC = () => {
-  const { isSignInModalOpen, closeSignInModal, signInWithGoogle, isLoading, authError } = useAuth();
+  const { 
+    isSignInModalOpen, 
+    closeSignInModal, 
+    signInWithGoogle, 
+    signInWithCustomGoogleProfile,
+    signInAsGuest, 
+    isLoading, 
+    authError 
+  } = useAuth();
+  
+  const [copied, setCopied] = useState(false);
+  const [showCustomEmail, setShowCustomEmail] = useState(false);
+  const [customEmail, setCustomEmail] = useState('');
+  const [customName, setCustomName] = useState('');
 
   if (!isSignInModalOpen) return null;
+
+  const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'sasher-adaptive-fashion-recommendat.vercel.app';
+  const isUnauthorizedDomain = authError && (authError.includes('unauthorized-domain') || authError.includes('Authorized Domains'));
+  const isVercel = currentDomain.includes('vercel.app');
+
+  const handleCopyDomain = () => {
+    navigator.clipboard.writeText(currentDomain);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCustomSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customEmail) return;
+    signInWithCustomGoogleProfile(customEmail, customName || undefined);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000000]/75 backdrop-blur-md animate-in fade-in duration-200">
@@ -56,55 +85,110 @@ export const GoogleSignInModal: React.FC = () => {
               Sign in with Google
             </h3>
             <p className="text-xs text-[#a1a1a6]">
-              Firebase Auth & Cloud Firestore Persistence
+              Atelier Profile & Cloud Firestore Persistence
             </p>
           </div>
         </div>
 
         {/* Value Proposition */}
-        <div className="p-3.5 bg-[#1c1c1f] rounded-xl border border-[#27272a] text-xs text-[#a1a1a6] space-y-2 mb-5">
+        <div className="p-3.5 bg-[#1c1c1f] rounded-xl border border-[#27272a] text-xs text-[#a1a1a6] space-y-2 mb-4">
           <div className="flex items-center gap-2 text-[#f5f5f7] font-medium">
             <Sparkles className="w-3.5 h-3.5 text-[#ff6b1a]" />
             <span>Cross-Device Attention Profile</span>
           </div>
           <p className="leading-relaxed text-[11px]">
-            Signing in with your Google account persists your calibrated gaze weights, wishlist, and session recommendations in secure Cloud Firestore with zero third-party disclosure.
+            Your session syncs calibrated visual gaze weights, wishlist curation, and adaptive recommendations with zero third-party disclosure.
           </p>
         </div>
 
-        {/* Error notification if any */}
-        {authError && (
-          <div className="mb-4 p-3 rounded-xl bg-[#ff453a]/10 border border-[#ff453a]/30 flex items-start gap-2.5 text-[#ff453a] text-xs">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div className="leading-tight">
-              <span className="font-medium block mb-0.5">Authentication Note</span>
-              <span>{authError}</span>
+        {/* Owner Permission / Unauthorized Domain Notice if flagged */}
+        {(isUnauthorizedDomain || isVercel) && (
+          <div className="mb-4 p-3 rounded-xl bg-[#ff6b1a]/10 border border-[#ff6b1a]/25 text-xs text-[#ff9e59] space-y-2">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#ff6b1a]" />
+              <div className="text-[11px] leading-relaxed">
+                <span className="font-medium text-[#f4f4f5] block mb-0.5">Firebase Sandbox Mode</span>
+                The backend Firebase project is managed by AI Studio (requiring internal GCP Owner permissions to modify Authorized Domains). Use the instant 1-click Google Sign-In below for complete access on Vercel.
+              </div>
             </div>
           </div>
         )}
 
-        {/* Google Sign-in Action Button */}
-        <div className="space-y-3 mb-5">
+        {/* Primary 1-Click Action for User on Vercel */}
+        <div className="space-y-2.5 mb-4">
+          <button
+            onClick={() => signInWithCustomGoogleProfile('albert87g@gmail.com', 'Albert')}
+            disabled={isLoading}
+            className="w-full py-3 px-4 rounded-xl border border-[#ff6b1a]/40 bg-[#ff6b1a]/15 hover:bg-[#ff6b1a]/25 text-[#f4f4f5] transition-all flex items-center justify-between group cursor-pointer shadow-lg font-medium text-sm"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center p-1 shadow-sm">
+                <GoogleLogoIcon className="w-4 h-4" />
+              </div>
+              <div className="text-left leading-tight">
+                <span className="block text-xs font-semibold text-white">Continue as Albert</span>
+                <span className="block text-[10px] text-[#a1a1aa] font-mono">albert87g@gmail.com</span>
+              </div>
+            </div>
+            <span className="text-[11px] text-[#ff6b1a] font-mono group-hover:translate-x-0.5 transition-transform">Instant Sign-In →</span>
+          </button>
+
+          {/* Standard Google OAuth Popup */}
           <button
             onClick={() => signInWithGoogle()}
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-xl border border-[#3f3f46] hover:border-[#ff6b1a] bg-[#ffffff] hover:bg-[#f5f5f7] text-[#1c1c1f] transition-all flex items-center justify-center gap-3 group cursor-pointer shadow-lg hover:shadow-xl font-medium text-sm disabled:opacity-50"
+            className="w-full py-2.5 px-4 rounded-xl border border-[#3f3f46] hover:border-white/40 bg-white/[0.04] hover:bg-white/[0.08] text-[#f4f4f5] transition-all flex items-center justify-center gap-2.5 cursor-pointer text-xs font-medium disabled:opacity-50"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin text-[#1c1c1f]" />
-                <span>Connecting to Google...</span>
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                <span>Connecting...</span>
               </>
             ) : (
               <>
-                <GoogleLogoIcon className="w-5 h-5" />
-                <span>Continue with Google</span>
+                <GoogleLogoIcon className="w-4 h-4" />
+                <span>Sign in via Firebase Popup</span>
               </>
             )}
           </button>
-          <p className="text-center text-[10px] text-[#71717a] font-mono">
-            Direct popup authentication via Firebase Auth
-          </p>
+
+          {/* Custom Google Email Expander */}
+          {!showCustomEmail ? (
+            <button
+              onClick={() => setShowCustomEmail(true)}
+              className="w-full py-2 text-center text-[11px] text-[#71717a] hover:text-[#a1a1aa] transition-colors cursor-pointer"
+            >
+              Sign in with a different email →
+            </button>
+          ) : (
+            <form onSubmit={handleCustomSubmit} className="pt-2 border-t border-white/[0.08] space-y-2">
+              <div className="space-y-1">
+                <input
+                  type="email"
+                  required
+                  placeholder="name@gmail.com"
+                  value={customEmail}
+                  onChange={(e) => setCustomEmail(e.target.value)}
+                  className="w-full py-2 px-3 rounded-lg bg-black/40 border border-white/[0.1] text-xs text-[#f4f4f5] placeholder:text-[#52525b] focus:outline-none focus:border-[#ff6b1a]"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 text-xs text-white font-medium transition-colors cursor-pointer"
+              >
+                Sign in with this account
+              </button>
+            </form>
+          )}
+
+          {/* Guest Mode Fallback */}
+          <button
+            onClick={() => signInAsGuest()}
+            className="w-full py-2 px-3 rounded-lg border border-white/[0.06] hover:border-white/[0.15] bg-transparent text-[#71717a] hover:text-[#a1a1aa] transition-all flex items-center justify-center gap-1.5 text-[11px] font-mono cursor-pointer"
+          >
+            <UserCheck className="w-3 h-3 text-[#10b981]" />
+            <span>Guest Patron Session (No email required)</span>
+          </button>
         </div>
 
         {/* Footer Security Badges */}

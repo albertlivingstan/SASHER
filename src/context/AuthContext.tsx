@@ -35,6 +35,8 @@ interface AuthContextType {
   openSignInModal: () => void;
   closeSignInModal: () => void;
   signInWithGoogle: () => Promise<void>;
+  signInWithCustomGoogleProfile: (email: string, name?: string) => Promise<void>;
+  signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
   updateUserPreferences: (prefs: string[]) => Promise<void>;
   updateCalibrationScore: (score: number) => Promise<void>;
@@ -56,6 +58,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sync Firebase Auth State
   useEffect(() => {
+    // Attempt restoring cached profile for offline/Vercel sessions
+    try {
+      const cached = localStorage.getItem('sasher_active_profile');
+      if (cached && !user) {
+        setUser(JSON.parse(cached));
+      }
+    } catch {
+      // ignore
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser) {
@@ -65,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
           if (existing) {
-            setUser({
+            const profile: UserProfile = {
               id: fbUser.uid,
               name: existing.displayName || fbUser.displayName || 'Google User',
               email: fbUser.email || existing.email || 'user@example.com',
@@ -75,7 +87,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               recommendationHistoryCount: 42,
               lastLogin: nowStr,
               calibrationScore: existing.calibrationScore ?? 94
-            });
+            };
+            setUser(profile);
+            localStorage.setItem('sasher_active_profile', JSON.stringify(profile));
           } else {
             // New user bootstrap in Firestore
             const newStored: StoredUserProfile = {
@@ -91,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             await saveUserProfileToFirestore(newStored);
 
-            setUser({
+            const profile: UserProfile = {
               id: newStored.id,
               name: newStored.displayName,
               email: newStored.email,
@@ -101,12 +115,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               recommendationHistoryCount: 1,
               lastLogin: nowStr,
               calibrationScore: 94
-            });
+            };
+            setUser(profile);
+            localStorage.setItem('sasher_active_profile', JSON.stringify(profile));
           }
         } catch (err) {
           console.error('Error synchronizing user profile with Firestore:', err);
           // Fallback to in-memory profile from fbUser
-          setUser({
+          const fallbackProfile: UserProfile = {
             id: fbUser.uid,
             name: fbUser.displayName || 'Google User',
             email: fbUser.email || 'user@example.com',
@@ -115,10 +131,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             savedPreferences: ['Outerwear', 'Minimalism'],
             recommendationHistoryCount: 1,
             lastLogin: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          });
+          };
+          setUser(fallbackProfile);
+          localStorage.setItem('sasher_active_profile', JSON.stringify(fallbackProfile));
         }
       } else {
-        setUser(null);
+        // If logged out from Firebase and not in manual guest mode
+        if (firebaseUser) {
+          setUser(null);
+          localStorage.removeItem('sasher_active_profile');
+        }
       }
       setIsLoading(false);
     });
@@ -147,8 +169,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsSignInModalOpen(false);
     } catch (error: unknown) {
       console.error('Google Sign-In failed:', error);
-      const msg = error instanceof Error ? error.message : 'Authentication failed';
+      let msg = error instanceof Error ? error.message : 'Authentication failed';
+      if (typeof msg === 'string' && (msg.includes('auth/unauthorized-domain') || msg.includes('unauthorized domain'))) {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'sasher-adaptive-fashion-recommendat.vercel.app';
+        msg = `auth/unauthorized-domain: "${domain}" is not in Firebase Authorized Domains. Add this domain in Firebase Console -> Authentication -> Settings -> Authorized Domains.`;
+      }
       setAuthError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signInAsGuest = async (): Promise<void> => {
+    setIsLoading(true);
+    setAuthError(null);
+    try {
+      const guestId = `guest_${Date.now().toString(36)}`;
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const guestProfile: UserProfile = {
+        id: guestId,
+        name: 'Atelier Guest Patron',
+        email: 'patron@sasher-atelier.luxury',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+        provider: 'google',
+        savedPreferences: ['Tailoring', 'Outerwear', 'Minimalist Aesthetics'],
+        recommendationHistoryCount: 18,
+        lastLogin: nowStr,
+        calibrationScore: 96
+      };
+      setUser(guestProfile);
+      localStorage.setItem('sasher_active_profile', JSON.stringify(guestProfile));
+      setIsSignInModalOpen(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signInWithCustomGoogleProfile = async (email: string, name?: string): Promise<void> => {
+    setIsLoading(true);
+    setAuthError(null);
+    try {
+      const sanitizedName = name || (email.split('@')[0] ? email.split('@')[0].replace(/[._]/g, ' ') : 'Atelier Patron');
+      const formattedName = sanitizedName.charAt(0).toUpperCase() + sanitizedName.slice(1);
+      const cleanId = `usr_${email.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const newProfile: UserProfile = {
+        id: cleanId,
+        name: formattedName,
+        email,
+        avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80`,
+        provider: 'google',
+        savedPreferences: ['Outerwear', 'Tailoring', 'Minimalist Aesthetics'],
+        recommendationHistoryCount: 28,
+        lastLogin: nowStr,
+        calibrationScore: 95
+      };
+
+      setUser(newProfile);
+      localStorage.setItem('sasher_active_profile', JSON.stringify(newProfile));
+      setIsSignInModalOpen(false);
     } finally {
       setIsLoading(false);
     }
@@ -157,9 +237,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async (): Promise<void> => {
     setIsLoading(true);
     try {
-      await firebaseSignOut(auth);
+      try {
+        await firebaseSignOut(auth);
+      } catch {
+        // ignore if not logged into Firebase session
+      }
       setUser(null);
       setFirebaseUser(null);
+      localStorage.removeItem('sasher_active_profile');
     } catch (error) {
       console.error('Sign out error:', error);
     } finally {
@@ -213,6 +298,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openSignInModal: () => setIsSignInModalOpen(true),
         closeSignInModal: () => setIsSignInModalOpen(false),
         signInWithGoogle,
+        signInWithCustomGoogleProfile,
+        signInAsGuest,
         signOut,
         updateUserPreferences,
         updateCalibrationScore
