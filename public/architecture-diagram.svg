@@ -1,0 +1,271 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="100%" height="100%">
+  <defs>
+    <style>
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 700; fill: #ffffff; }
+      .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; fill: #a1a1aa; }
+      .node-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 600; font-size: 13px; text-anchor: middle; dominant-baseline: middle; }
+      .node-subtext { font-family: "JetBrains Mono", monospace; font-size: 10px; text-anchor: middle; dominant-baseline: middle; fill: #71717a; }
+      .arrow { stroke: #52525b; stroke-width: 1.5; fill: none; stroke-dasharray: none; marker-end: url(#arrowhead); }
+      .arrow-dashed { stroke: #52525b; stroke-width: 1.5; fill: none; stroke-dasharray: 4,4; marker-end: url(#arrowhead); }
+      .arrow-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; fill: #71717a; }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#71717a" />
+    </marker>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c0d0e" />
+      <stop offset="100%" stop-color="#141519" />
+    </linearGradient>
+    <linearGradient id="appGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1f2430" />
+      <stop offset="100%" stop-color="#161822" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="900" fill="url(#bgGrad)" />
+
+  <!-- Grid overlay -->
+  <g opacity="0.05" stroke="#ffffff" stroke-width="1">
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="40" y2="0" />
+      <line x1="0" y1="0" x2="0" y2="40" />
+    </pattern>
+    <rect width="1600" height="900" fill="url(#grid)" />
+  </g>
+
+  <!-- Title Header -->
+  <text x="800" y="42" text-anchor="middle" class="title" font-size="22" letter-spacing="1">SASHER ARCHITECTURE &amp; SYSTEM DATAFLOW</text>
+  <text x="800" y="64" text-anchor="middle" class="label" font-size="12">Secure Adaptive Session-Aware Hybrid E-Commerce Recommendation Architecture</text>
+
+  <!-- TOP ACTOR: Shopper -->
+  <circle cx="800" cy="115" r="32" fill="#3b82f6" fill-opacity="0.2" stroke="#60a5fa" stroke-width="2" />
+  <text x="800" y="115" class="node-text" fill="#93c5fd" font-size="13">Shopper</text>
+  <path d="M 800 147 L 800 185" class="arrow" />
+  <text x="815" y="168" class="arrow-text">uses</text>
+
+  <!-- APP SHELL CONTAINER -->
+  <rect x="670" y="185" width="260" height="155" rx="14" fill="url(#appGrad)" stroke="#3b82f6" stroke-width="1.5" stroke-opacity="0.6" />
+  <text x="800" y="202" text-anchor="middle" class="label" font-size="10" fill="#93c5fd" font-weight="600">APPLICATION LAYER</text>
+
+  <!-- App Shell [App.tsx] -->
+  <rect x="710" y="215" width="180" height="42" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1" />
+  <text x="800" y="231" class="node-text" fill="#f8fafc">App Shell</text>
+  <text x="800" y="246" class="node-subtext">[App.tsx]</text>
+
+  <path d="M 800 257 L 800 282" class="arrow" />
+  <text x="815" y="272" class="arrow-text">reads state</text>
+
+  <!-- Commerce State [SasherContext.tsx] -->
+  <rect x="695" y="282" width="210" height="42" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5" />
+  <text x="800" y="298" class="node-text" fill="#e0f2fe">Commerce State</text>
+  <text x="800" y="313" class="node-subtext" fill="#38bdf8">[SasherContext.tsx]</text>
+
+  <!-- 4 ARCHITECTURE QUADRANTS -->
+
+  <!-- QUADRANT 1: RESEARCH ANALYTICS (Pink/Rose) -->
+  <rect x="40" y="440" width="320" height="380" rx="14" fill="#1a1218" stroke="#f43f5e" stroke-width="1.2" stroke-opacity="0.4" />
+  <rect x="55" y="452" width="135" height="22" rx="4" fill="#f43f5e" fill-opacity="0.15" />
+  <text x="122" y="467" text-anchor="middle" class="title" font-size="11" fill="#fda4af">RESEARCH ANALYTICS</text>
+
+  <!-- Analytics Nodes -->
+  <g transform="translate(60, 490)">
+    <!-- Evaluation Analytics -->
+    <rect x="0" y="0" width="130" height="50" rx="8" fill="#2d121f" stroke="#fb7185" stroke-width="1" />
+    <text x="65" y="22" class="node-text" fill="#ffe4e6" font-size="11">Evaluation</text>
+    <text x="65" y="36" class="node-text" fill="#ffe4e6" font-size="11">Analytics</text>
+
+    <!-- AI Insights -->
+    <rect x="150" y="0" width="130" height="50" rx="8" fill="#2d121f" stroke="#fb7185" stroke-width="1" />
+    <text x="215" y="19" class="node-text" fill="#ffe4e6" font-size="11">AI Insights</text>
+    <text x="215" y="35" class="node-subtext">[AIInsightsView]</text>
+
+    <!-- Research Dashboard -->
+    <rect x="0" y="90" width="130" height="50" rx="8" fill="#2d121f" stroke="#fb7185" stroke-width="1" />
+    <text x="65" y="112" class="node-text" fill="#ffe4e6" font-size="11">Research</text>
+    <text x="65" y="126" class="node-text" fill="#ffe4e6" font-size="11">Dashboard</text>
+
+    <!-- Product Research -->
+    <rect x="0" y="180" width="130" height="45" rx="8" fill="#3f1225" stroke="#f43f5e" stroke-width="1" stroke-dasharray="3,3" />
+    <text x="65" y="202" class="node-text" fill="#fecdd3" font-size="11">Product</text>
+    <text x="65" y="215" class="node-text" fill="#fecdd3" font-size="11">Research</text>
+    <path d="M 65 140 L 65 180" class="arrow" />
+    <text x="73" y="162" class="arrow-text">includes</text>
+
+    <!-- Platform Analytics -->
+    <rect x="150" y="90" width="130" height="50" rx="8" fill="#2d121f" stroke="#fb7185" stroke-width="1" />
+    <text x="215" y="112" class="node-text" fill="#ffe4e6" font-size="11">Platform</text>
+    <text x="215" y="126" class="node-text" fill="#ffe4e6" font-size="11">Analytics</text>
+  </g>
+
+  <!-- QUADRANT 2: IDENTITY SERVICES (Blue/Indigo) -->
+  <rect x="380" y="440" width="280" height="380" rx="14" fill="#0f172a" stroke="#6366f1" stroke-width="1.2" stroke-opacity="0.4" />
+  <rect x="395" y="452" width="125" height="22" rx="4" fill="#6366f1" fill-opacity="0.15" />
+  <text x="457" y="467" text-anchor="middle" class="title" font-size="11" fill="#c7d2fe">IDENTITY SERVICES</text>
+
+  <g transform="translate(400, 490)">
+    <!-- Order Service -->
+    <rect x="0" y="0" width="115" height="50" rx="8" fill="#1e1b4b" stroke="#818cf8" stroke-width="1" />
+    <text x="57" y="19" class="node-text" fill="#e0e7ff" font-size="11">Order Service</text>
+    <text x="57" y="35" class="node-subtext">[orderService.ts]</text>
+
+    <!-- Auth Context -->
+    <rect x="125" y="0" width="115" height="50" rx="8" fill="#1e1b4b" stroke="#818cf8" stroke-width="1" />
+    <text x="182" y="19" class="node-text" fill="#e0e7ff" font-size="11">Auth Context</text>
+    <text x="182" y="35" class="node-subtext">[AuthContext.tsx]</text>
+
+    <!-- Firestore Storage -->
+    <rect x="125" y="90" width="115" height="50" rx="8" fill="#1e1b4b" stroke="#818cf8" stroke-width="1" />
+    <text x="182" y="112" class="node-text" fill="#e0e7ff" font-size="11">Firestore</text>
+    <text x="182" y="126" class="node-text" fill="#e0e7ff" font-size="11">Storage</text>
+
+    <!-- Database Cylinder -->
+    <path d="M 140 220 C 140 210, 225 210, 225 220 L 225 255 C 225 265, 140 265, 140 255 Z" fill="#312e81" stroke="#f59e0b" stroke-width="1.5" />
+    <ellipse cx="182" cy="220" rx="42" ry="10" fill="#4338ca" stroke="#f59e0b" stroke-width="1.5" />
+    <text x="182" y="240" class="node-text" fill="#fde68a" font-size="11">Firestore</text>
+    <text x="182" y="252" class="node-subtext" fill="#fbbf24">[Cloud DB]</text>
+
+    <!-- Connections to DB -->
+    <path d="M 182 50 L 182 90" class="arrow" />
+    <path d="M 182 140 L 182 205" class="arrow" />
+    <text x="190" y="175" class="arrow-text">reads/writes</text>
+  </g>
+
+  <!-- QUADRANT 3: GAZE ADAPTATION (Green/Emerald) -->
+  <rect x="680" y="440" width="400" height="380" rx="14" fill="#061c14" stroke="#10b981" stroke-width="1.2" stroke-opacity="0.4" />
+  <rect x="695" y="452" width="135" height="22" rx="4" fill="#10b981" fill-opacity="0.15" />
+  <text x="762" y="467" text-anchor="middle" class="title" font-size="11" fill="#a7f3d0">GAZE ADAPTATION</text>
+
+  <g transform="translate(695, 490)">
+    <!-- Session Intent -->
+    <rect x="0" y="0" width="115" height="50" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="1" />
+    <text x="57" y="25" class="node-text" fill="#ecfdf5" font-size="11">Session Intent</text>
+
+    <!-- Gaze Tracker -->
+    <rect x="125" y="0" width="115" height="50" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="1" />
+    <text x="182" y="19" class="node-text" fill="#ecfdf5" font-size="11">Gaze Tracker</text>
+    <text x="182" y="35" class="node-subtext">[eyeTracker.ts]</text>
+
+    <!-- Gaze Engine -->
+    <rect x="125" y="90" width="115" height="45" rx="8" fill="#022c22" stroke="#10b981" stroke-width="1" stroke-dasharray="3,3" />
+    <text x="182" y="112" class="node-text" fill="#6ee7b7" font-size="11">Gaze Engine</text>
+    <path d="M 182 50 L 182 90" class="arrow" />
+    <text x="190" y="72" class="arrow-text">uses</text>
+
+    <!-- Gaze Studio -->
+    <rect x="250" y="0" width="115" height="50" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="1" />
+    <text x="307" y="25" class="node-text" fill="#ecfdf5" font-size="11">Gaze Studio</text>
+
+    <!-- Live Adaptation -->
+    <rect x="0" y="90" width="115" height="45" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="1" />
+    <text x="57" y="112" class="node-text" fill="#ecfdf5" font-size="11">Live Adaptation</text>
+
+    <!-- Fashion Assistant -->
+    <rect x="250" y="90" width="115" height="45" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="1" />
+    <text x="307" y="112" class="node-text" fill="#ecfdf5" font-size="11">Fashion Assistant</text>
+
+    <!-- Assistant Service -->
+    <rect x="250" y="170" width="115" height="45" rx="8" fill="#022c22" stroke="#10b981" stroke-width="1" stroke-dasharray="3,3" />
+    <text x="307" y="187" class="node-text" fill="#6ee7b7" font-size="10">Assistant Service</text>
+    <text x="307" y="200" class="node-subtext" fill="#34d399">[Julian Laurent]</text>
+    <path d="M 307 135 L 307 170" class="arrow" />
+    <text x="315" y="153" class="arrow-text">requests</text>
+
+    <!-- Gemini API -->
+    <rect x="250" y="250" width="115" height="42" rx="8" fill="#1e1b4b" stroke="#818cf8" stroke-width="1.5" />
+    <text x="307" y="266" class="node-text" fill="#c7d2fe" font-size="11">Gemini API</text>
+    <text x="307" y="280" class="node-subtext" fill="#a5b4fc">[@google/genai]</text>
+    <path d="M 307 215 L 307 250" class="arrow" />
+    <text x="315" y="235" class="arrow-text">calls</text>
+  </g>
+
+  <!-- QUADRANT 4: FASHION COMMERCE (Amber/Orange) -->
+  <rect x="1100" y="440" width="460" height="380" rx="14" fill="#1c160c" stroke="#f59e0b" stroke-width="1.2" stroke-opacity="0.4" />
+  <rect x="1115" y="452" width="145" height="22" rx="4" fill="#f59e0b" fill-opacity="0.15" />
+  <text x="1187" y="467" text-anchor="middle" class="title" font-size="11" fill="#fde68a">FASHION COMMERCE</text>
+
+  <g transform="translate(1115, 490)">
+    <!-- Row 1: Core Commerce UI -->
+    <!-- Navigation -->
+    <rect x="0" y="0" width="100" height="48" rx="8" fill="#451a03" stroke="#fbbf24" stroke-width="1" />
+    <text x="50" y="18" class="node-text" fill="#fef3c7" font-size="11">Navigation</text>
+    <text x="50" y="33" class="node-subtext">[Navbar.tsx]</text>
+
+    <!-- Product Catalog -->
+    <rect x="110" y="0" width="105" height="48" rx="8" fill="#451a03" stroke="#fbbf24" stroke-width="1" />
+    <text x="162" y="18" class="node-text" fill="#fef3c7" font-size="11">Product Catalog</text>
+    <text x="162" y="33" class="node-subtext">[ProductGrid]</text>
+
+    <!-- Product Data -->
+    <rect x="225" y="0" width="100" height="48" rx="8" fill="#451a03" stroke="#fbbf24" stroke-width="1" />
+    <text x="275" y="18" class="node-text" fill="#fef3c7" font-size="11">Product Data</text>
+    <text x="275" y="33" class="node-subtext">[products.ts]</text>
+
+    <!-- Cart Drawer -->
+    <rect x="335" y="0" width="95" height="48" rx="8" fill="#451a03" stroke="#fbbf24" stroke-width="1" />
+    <text x="382" y="18" class="node-text" fill="#fef3c7" font-size="11">Cart Drawer</text>
+    <text x="382" y="33" class="node-subtext">[CartDrawer]</text>
+
+    <!-- Row 2: Secondary / Detail Views -->
+    <!-- Checkout -->
+    <rect x="0" y="85" width="100" height="48" rx="8" fill="#451a03" stroke="#fbbf24" stroke-width="1" />
+    <text x="50" y="103" class="node-text" fill="#fef3c7" font-size="11">Checkout</text>
+    <text x="50" y="118" class="node-subtext">[CheckoutModal]</text>
+
+    <!-- Product Detail -->
+    <rect x="110" y="85" width="105" height="48" rx="8" fill="#451a03" stroke="#fbbf24" stroke-width="1" />
+    <text x="162" y="109" class="node-text" fill="#fef3c7" font-size="11">Product Detail</text>
+
+    <!-- Customer Support -->
+    <rect x="225" y="85" width="100" height="48" rx="8" fill="#451a03" stroke="#fbbf24" stroke-width="1" />
+    <text x="275" y="109" class="node-text" fill="#fef3c7" font-size="11">Customer Support</text>
+
+    <!-- Order History -->
+    <rect x="335" y="85" width="95" height="48" rx="8" fill="#451a03" stroke="#fbbf24" stroke-width="1" />
+    <text x="382" y="103" class="node-text" fill="#fef3c7" font-size="11">Order History</text>
+    <text x="382" y="118" class="node-subtext">[OrderHistory]</text>
+
+    <!-- Row 3: Tracking & Returns -->
+    <!-- Order Tracking -->
+    <rect x="110" y="165" width="105" height="42" rx="8" fill="#301504" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3" />
+    <text x="162" y="186" class="node-text" fill="#fde68a" font-size="11">Order Tracking</text>
+
+    <!-- Returns -->
+    <rect x="225" y="165" width="100" height="42" rx="8" fill="#301504" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3" />
+    <text x="275" y="186" class="node-text" fill="#fde68a" font-size="11">Returns</text>
+
+    <!-- Vertical arrows from catalog to details -->
+    <path d="M 162 48 L 162 85" class="arrow" />
+    <path d="M 162 133 L 162 165" class="arrow" />
+    <path d="M 275 133 L 275 165" class="arrow" />
+  </g>
+
+  <!-- INTER-MODULE DISPATCH BUS FROM APP SHELL / STATE -->
+  <!-- Line down from Commerce State -->
+  <path d="M 800 324 L 800 380" stroke="#38bdf8" stroke-width="1.5" fill="none" />
+
+  <!-- Horizontal Bus -->
+  <path d="M 200 380 L 1330 380" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4,4" fill="none" />
+
+  <!-- Feeds to 4 Modules -->
+  <!-- To Research Analytics -->
+  <path d="M 200 380 L 200 440" class="arrow" />
+  <text x="208" y="415" class="arrow-text">routes to</text>
+
+  <!-- To Identity Services -->
+  <path d="M 520 380 L 520 440" class="arrow" />
+  <text x="528" y="415" class="arrow-text">renders / uses</text>
+
+  <!-- To Gaze Adaptation -->
+  <path d="M 880 380 L 880 440" class="arrow" />
+  <text x="888" y="415" class="arrow-text">initializes / adapts</text>
+
+  <!-- To Fashion Commerce -->
+  <path d="M 1330 380 L 1330 440" class="arrow" />
+  <text x="1338" y="415" class="arrow-text">renders catalog</text>
+
+  <!-- Footer status badge -->
+  <rect x="670" y="855" width="260" height="26" rx="13" fill="#18191d" stroke="#27272a" stroke-width="1" />
+  <circle cx="686" cy="868" r="4" fill="#10b981" />
+  <text x="805" y="872" text-anchor="middle" class="label" font-size="10" fill="#a1a1aa">SASHER System Architecture v1.0.0 &bull; Production Ready</text>
+</svg>
