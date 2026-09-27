@@ -3,6 +3,10 @@
 > **Secure Adaptive Session-Aware Hybrid E-Commerce Recommendation Architecture**  
 > Uniting on-device computer vision eye-tracking, transformer session intent prediction, and explainable AI personal styling.
 
+[![Watch SASHER Walkthrough Video](https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80)](https://vimeo.com/1230609125?share=copy&fl=sv&fe=ci)
+
+> ▶️ **[Watch the Complete SASHER Architectural Walkthrough Video on Vimeo](https://vimeo.com/1230609125?share=copy&fl=sv&fe=ci)**
+
 ![SASHER System Architecture](./public/architecture-diagram.svg)
 
 ---
@@ -256,6 +260,17 @@ The application includes a pre-configured `vercel.json`:
 - **Zero Video Telemetry**: Camera frames used for gaze calibration are computed in real-time in volatile client memory and immediately discarded.
 - **Client-Side Spatial Calibration**: Coordinates are normalized to DOM bounding rects without transmitting camera feeds.
 - **Secure Fallbacks**: Offline and sandbox modes operate seamlessly with localStorage caching when cloud network access is restricted.
+
+---
+
+## 🎨 UI/UX Design System (Redesigned Dashboard)
+
+SASHER features a premium dark fashion-commerce dashboard design inspired by high-end luxury stores and modern AI interfaces:
+- **Dark Editorial Palette**: `#0D0D0D` main background, `#151515`/`#181818` card surfaces, and warm champagne/beige (`#d4a373`) accents.
+- **Fixed Left Sidebar (`Sidebar.tsx`)**: Compact 240px navigation rail with icon links (`Home`, `User`, `Browse`, `Favorites`, `Analytics`, `Shopping`, `History`, `Concepts`) and saved item search.
+- **Professional Top Navigation (`TopNavigation.tsx`)**: Sticky header featuring a large rounded search bar, "Open Closet" champagne button, shopping bag count badge, notification indicator, and user profile avatar.
+- **5-Column Product Grid (`ProductGrid.tsx`)**: High-density editorial product presentation featuring compact filter pills (`[ User ▾ ] [ All Sizes ▾ ] [ Categories ▾ ] [ Colors ▾ ] [ Occasions ▾ ]`), sorting controls, and visual interest lock reticles.
+- **Curated Recommendations Section (`RecommendationsSection.tsx`)**: Dedicated row showcasing items tailored to real-time session intent.
 
 ---
 

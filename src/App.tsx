@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { SasherProvider, useSasher } from './context/SasherContext';
 import { AuthProvider } from './context/AuthContext';
-import { Navbar } from './components/navigation/Navbar';
+import { Sidebar } from './components/navigation/Sidebar';
+import { TopNavigation } from './components/navigation/TopNavigation';
 import { CartDrawer } from './components/navigation/CartDrawer';
 import { HeroSection } from './components/hero/HeroSection';
-import { VisualIntentControl } from './components/eyetracking/VisualIntentControl';
-import { CalibrationModal } from './components/eyetracking/CalibrationModal';
-import { GazeDebugModal } from './components/eyetracking/GazeDebugModal';
 import { ProductGrid } from './components/product/ProductGrid';
+import { RecommendationsSection } from './components/recommendations/RecommendationsSection';
 import { ProductDetailModal } from './components/product/ProductDetailModal';
 import { WhyRecommendedModal } from './components/recommendations/WhyRecommendedModal';
 import { LiveAdaptationDemo } from './components/session/LiveAdaptationDemo';
@@ -29,11 +28,14 @@ import { PlatformAnalyticsView } from './components/analytics/PlatformAnalyticsV
 import { EvaluationAnalyticsView } from './components/analytics/EvaluationAnalyticsView';
 import { FashionAssistantChatbot } from './components/assistant/FashionAssistantChatbot';
 import { UserProfileModal } from './components/account/UserProfileModal';
+import { ShoppingMarketplaceView } from './components/shopping/ShoppingMarketplaceView';
+import { SplashScreen } from './components/ui/SplashScreen';
 import { INITIAL_PRODUCTS } from './data/products';
 import { RecommendedProduct, CompletedOrder } from './types';
 import { Sparkles, Eye, X } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const [currentTab, setCurrentTab] = useState<string>('discover');
   const [selectedProductForModal, setSelectedProductForModal] = useState<RecommendedProduct | null>(null);
 
@@ -41,9 +43,8 @@ const MainLayout: React.FC = () => {
     setExplanationModalProduct,
     recentAdaptiveNotification,
     dismissAdaptiveNotification,
-    isProjectDrawerOpen,
-    setIsProjectDrawerOpen,
-    activeSuggestedProject,
+    isCartDrawerOpen,
+    setIsCartDrawerOpen,
     completedOrders
   } = useSasher();
 
@@ -57,7 +58,7 @@ const MainLayout: React.FC = () => {
   const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
   const [userProfileTab, setUserProfileTab] = useState<'orders' | 'profile' | 'calibration' | 'security'>('orders');
 
-  const handleOpenUserProfile = (tab: 'orders' | 'profile' = 'orders') => {
+  const handleOpenUserProfile = (tab: 'orders' | 'profile' | 'calibration' | 'security' = 'orders') => {
     setUserProfileTab(tab);
     setIsUserProfileOpen(true);
   };
@@ -122,7 +123,10 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0d0e] text-[#f4f4f5] flex flex-col font-sans selection:bg-[#ff6b1a]/20 selection:text-[#faebd7]">
+    <div className="min-h-screen bg-[#0D0D0D] text-[#f4f4f5] flex font-sans selection:bg-[#d4a373]/20 selection:text-[#faebd7]">
+      {/* Splash Screen */}
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+
       {/* Custom Cursor & Glow with Magnetic Reaction */}
       <CustomCursor />
 
@@ -132,199 +136,213 @@ const MainLayout: React.FC = () => {
       {/* Google Authentication Modal */}
       <GoogleSignInModal />
 
-      {/* 3-Zone Global Navbar with Client Support & Tracking Access */}
-      <Navbar 
-        currentTab={currentTab} 
-        setCurrentTab={setCurrentTab} 
-        onOpenSupport={() => setIsGlobalSupportOpen(true)}
-        onOpenTracking={() => handleOpenGlobalTracking()}
-        onOpenReturn={() => handleOpenGlobalReturn()}
+      {/* Left Fixed Sidebar */}
+      <Sidebar
+        currentTab={currentTab}
+        setCurrentTab={setCurrentTab}
         onOpenProfile={handleOpenUserProfile}
-        onOpenOrderHistory={() => handleOpenUserProfile('orders')}
+        onOpenWishlist={scrollToCatalog}
       />
 
-      {/* Modals & Slide-out Panels */}
-      <CalibrationModal />
-      <GazeDebugModal />
-      <ProductDetailModal
-        product={selectedProductForModal}
-        onClose={() => setSelectedProductForModal(null)}
-        onSelectSimilarProduct={(p) => setSelectedProductForModal(p as RecommendedProduct)}
-        onViewResearch={() => {
-          setSelectedProductForModal(null);
-          setCurrentTab('research');
-          setTimeout(() => {
-            const el = document.getElementById('section-product-research');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        }}
-      />
-      <WhyRecommendedModal />
-      <CartDrawer />
-      <CheckoutModal />
+      {/* Main App Wrapper with Left Padding for Sidebar */}
+      <div className="flex-1 lg:pl-60 flex flex-col min-h-screen">
+        
+        {/* Top Professional Navigation Bar */}
+        <TopNavigation
+          onOpenCart={() => setIsCartDrawerOpen(true)}
+          onOpenProfile={handleOpenUserProfile}
+          onOpenSupport={() => setIsGlobalSupportOpen(true)}
+        />
 
-      {/* User Account Profile & Order History Modal */}
-      <UserProfileModal
-        isOpen={isUserProfileOpen}
-        onClose={() => setIsUserProfileOpen(false)}
-        initialTab={userProfileTab}
-        onOpenTracking={(order) => handleOpenGlobalTracking(order)}
-        onOpenReturn={(order) => handleOpenGlobalReturn(order)}
-        onSelectProduct={(productId) => {
-          setIsUserProfileOpen(false);
-          const found = INITIAL_PRODUCTS.find(p => p.id === productId);
-          if (found) setSelectedProductForModal(found as RecommendedProduct);
-        }}
-      />
+        {/* Modals & Slide-out Panels */}
+        <ProductDetailModal
+          product={selectedProductForModal}
+          onClose={() => setSelectedProductForModal(null)}
+          onSelectSimilarProduct={(p) => setSelectedProductForModal(p as RecommendedProduct)}
+          onViewResearch={() => {
+            setSelectedProductForModal(null);
+            setCurrentTab('research');
+            setTimeout(() => {
+              const el = document.getElementById('section-product-research');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }}
+        />
+        <WhyRecommendedModal />
+        <CartDrawer />
+        <CheckoutModal />
 
-      {/* Global Live Tracking Modal */}
-      <OrderTrackingModal
-        order={activeOrderForModal || getResolvedOrder()}
-        isOpen={isGlobalTrackingOpen}
-        onClose={() => setIsGlobalTrackingOpen(false)}
-        onOpenReturn={(order) => {
-          setIsGlobalTrackingOpen(false);
-          handleOpenGlobalReturn(order);
-        }}
-        onOpenSupport={() => {
-          setIsGlobalTrackingOpen(false);
-          setIsGlobalSupportOpen(true);
-        }}
-      />
+        {/* User Account Profile & Order History Modal */}
+        <UserProfileModal
+          isOpen={isUserProfileOpen}
+          onClose={() => setIsUserProfileOpen(false)}
+          initialTab={userProfileTab}
+          onOpenTracking={(order) => handleOpenGlobalTracking(order)}
+          onOpenReturn={(order) => handleOpenGlobalReturn(order)}
+          onSelectProduct={(productId) => {
+            setIsUserProfileOpen(false);
+            const found = INITIAL_PRODUCTS.find(p => p.id === productId);
+            if (found) setSelectedProductForModal(found as RecommendedProduct);
+          }}
+        />
 
-      {/* Global Returns Modal */}
-      <OrderReturnModal
-        order={activeOrderForModal || getResolvedOrder()}
-        isOpen={isGlobalReturnOpen}
-        onClose={() => setIsGlobalReturnOpen(false)}
-        onOpenSupport={() => {
-          setIsGlobalReturnOpen(false);
-          setIsGlobalSupportOpen(true);
-        }}
-      />
+        {/* Global Live Tracking Modal */}
+        <OrderTrackingModal
+          order={activeOrderForModal || getResolvedOrder()}
+          isOpen={isGlobalTrackingOpen}
+          onClose={() => setIsGlobalTrackingOpen(false)}
+          onOpenReturn={(order) => {
+            setIsGlobalTrackingOpen(false);
+            handleOpenGlobalReturn(order);
+          }}
+          onOpenSupport={() => {
+            setIsGlobalTrackingOpen(false);
+            setIsGlobalSupportOpen(true);
+          }}
+        />
 
-      {/* Global Customer Support Modal */}
-      <CustomerSupportModal
-        isOpen={isGlobalSupportOpen}
-        onClose={() => setIsGlobalSupportOpen(false)}
-        onOpenTracking={(order) => handleOpenGlobalTracking(order)}
-        onOpenReturn={(order) => handleOpenGlobalReturn(order)}
-        recentOrders={completedOrders.length > 0 ? completedOrders : [getResolvedOrder()]}
-      />
+        {/* Global Returns Modal */}
+        <OrderReturnModal
+          order={activeOrderForModal || getResolvedOrder()}
+          isOpen={isGlobalReturnOpen}
+          onClose={() => setIsGlobalReturnOpen(false)}
+          onOpenSupport={() => {
+            setIsGlobalReturnOpen(false);
+            setIsGlobalSupportOpen(true);
+          }}
+        />
 
-      {/* Animated Fashion Assistant Chatbot (Section 7, 8, 9) */}
-      <FashionAssistantChatbot
-        activeModalProduct={selectedProductForModal}
-        onSelectProduct={(p) => setSelectedProductForModal(p as RecommendedProduct)}
-      />
+        {/* Global Customer Support Modal */}
+        <CustomerSupportModal
+          isOpen={isGlobalSupportOpen}
+          onClose={() => setIsGlobalSupportOpen(false)}
+          onOpenTracking={(order) => handleOpenGlobalTracking(order)}
+          onOpenReturn={(order) => handleOpenGlobalReturn(order)}
+          recentOrders={completedOrders.length > 0 ? completedOrders : [getResolvedOrder()]}
+        />
 
-      {/* Dynamic Adaptive Notification Toast (Positioned above chatbot) */}
-      {recentAdaptiveNotification && (
-        <div className="fixed bottom-22 right-6 z-50 max-w-md bg-[#18191d]/95 border border-[#10b981]/50 rounded-xl p-3.5 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-bottom-5">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#10b981] animate-ping shrink-0" />
-            <span className="text-[#f4f4f5] font-medium leading-snug">
-              {recentAdaptiveNotification}
-            </span>
+        {/* Animated Fashion Assistant Chatbot */}
+        <FashionAssistantChatbot
+          activeModalProduct={selectedProductForModal}
+          onSelectProduct={(p) => setSelectedProductForModal(p as RecommendedProduct)}
+        />
+
+        {/* Dynamic Adaptive Notification Toast */}
+        {recentAdaptiveNotification && (
+          <div className="fixed bottom-22 right-6 z-50 max-w-md bg-[#18181b]/95 border border-[#d4a373]/50 rounded-xl p-3.5 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-bottom-5">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-[#10b981] animate-ping shrink-0" />
+              <span className="text-[#f4f4f5] font-medium leading-snug">
+                {recentAdaptiveNotification}
+              </span>
+            </div>
+            <button
+              onClick={dismissAdaptiveNotification}
+              className="text-[#71717a] hover:text-[#f4f4f5] transition-colors p-1"
+              aria-label="Dismiss toast"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button
-            onClick={dismissAdaptiveNotification}
-            className="text-[#71717a] hover:text-[#f4f4f5] transition-colors p-1"
-            aria-label="Dismiss toast"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+        )}
 
-      {/* Tab Routed Views */}
-      <main className="flex-1">
-        {currentTab === 'discover' && (
-          <div>
-            {/* Hero Section */}
-            <HeroSection
-              onExplore={scrollToCatalog}
-              onHowItWorks={scrollToHowItWorks}
-              onOpenTelemetry={() => setCurrentTab('telemetry')}
+        {/* Tab Routed Views */}
+        <main className="flex-1">
+          {currentTab === 'discover' && (
+            <div>
+              {/* Hero Section */}
+              <HeroSection
+                onExplore={scrollToCatalog}
+                onHowItWorks={scrollToHowItWorks}
+                onOpenTelemetry={() => setCurrentTab('telemetry')}
+              />
+
+              {/* Catalog Grid with Compact Filter Bar & 5 Columns */}
+              <div id="catalog-section">
+                <ProductGrid
+                  onSelectProduct={(p) => setSelectedProductForModal(p)}
+                  onExplainProduct={(p) => setExplanationModalProduct(p)}
+                />
+              </div>
+
+              {/* Recommendations Section */}
+              <RecommendationsSection
+                onSelectProduct={(p) => setSelectedProductForModal(p)}
+                onExplainProduct={(p) => setExplanationModalProduct(p)}
+                onSeeAll={scrollToCatalog}
+              />
+
+              {/* Session Intent & Security Trust Section */}
+              <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8 border-t border-white/[0.06]">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  <div className="lg:col-span-7">
+                    <SessionIntentWidget />
+                  </div>
+                  <div className="lg:col-span-5">
+                    <TrustStatusPanel />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentTab === 'telemetry' && (
+            <div className="space-y-12 pb-16">
+              <LiveTelemetryHub onExploreRecommendations={scrollToCatalog} />
+              <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                <LiveAdaptationDemo />
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  <div className="lg:col-span-7">
+                    <SessionIntentWidget />
+                  </div>
+                  <div className="lg:col-span-5">
+                    <TrustStatusPanel />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentTab === 'shopping' && (
+            <ShoppingMarketplaceView
+              onSelectProduct={(p) => setSelectedProductForModal(p)}
+              onExplainProduct={(p) => setExplanationModalProduct(p)}
             />
+          )}
 
-            {/* Advanced Animated Live Telemetry & Algorithms Engine (Reference Video Signature) */}
-            <LiveTelemetryHub onExploreRecommendations={scrollToCatalog} />
-
-            {/* Live Recommendation Adaptation Demo */}
-            <LiveAdaptationDemo />
-
-            {/* Catalog Grid */}
-            <div id="catalog-section">
+          {currentTab === 'recommendations' && (
+            <div className="pt-6">
+              <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+                <SessionIntentWidget />
+              </div>
               <ProductGrid
                 onSelectProduct={(p) => setSelectedProductForModal(p)}
                 onExplainProduct={(p) => setExplanationModalProduct(p)}
               />
             </div>
+          )}
 
-            {/* Session Intent & Security Trust Section */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8 border-t border-[#27272a]/60">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                <div className="lg:col-span-7">
-                  <SessionIntentWidget />
-                </div>
-                <div className="lg:col-span-5">
-                  <TrustStatusPanel />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          {currentTab === 'gaze_studio' && <GazeTrackingStudioView />}
 
-        {currentTab === 'telemetry' && (
-          <div className="space-y-12 pb-16">
-            <LiveTelemetryHub onExploreRecommendations={scrollToCatalog} />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-              <LiveAdaptationDemo />
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                <div className="lg:col-span-7">
-                  <SessionIntentWidget />
-                </div>
-                <div className="lg:col-span-5">
-                  <TrustStatusPanel />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          {currentTab === 'evaluation_analytics' && <EvaluationAnalyticsView />}
 
-        {currentTab === 'recommendations' && (
-          <div className="pt-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-              <SessionIntentWidget />
-            </div>
-            <ProductGrid
-              onSelectProduct={(p) => setSelectedProductForModal(p)}
-              onExplainProduct={(p) => setExplanationModalProduct(p)}
-            />
-          </div>
-        )}
+          {currentTab === 'platform_analytics' && <PlatformAnalyticsView />}
 
-        {currentTab === 'gaze_studio' && <GazeTrackingStudioView />}
+          {currentTab === 'insights' && <AiInsightsView />}
 
-        {currentTab === 'evaluation_analytics' && <EvaluationAnalyticsView />}
+          {currentTab === 'research' && <ResearchDashboardView />}
+        </main>
 
-        {currentTab === 'platform_analytics' && <PlatformAnalyticsView />}
-
-        {currentTab === 'insights' && <AiInsightsView />}
-
-        {currentTab === 'research' && <ResearchDashboardView />}
-      </main>
-
-      {/* Editorial Footer */}
-      <Footer 
-        onSelectTab={(tab) => setCurrentTab(tab)} 
-        onOpenSupport={() => setIsGlobalSupportOpen(true)}
-        onOpenTracking={() => handleOpenGlobalTracking()}
-        onOpenReturn={() => handleOpenGlobalReturn()}
-        onOpenProfile={handleOpenUserProfile}
-        onOpenOrderHistory={() => handleOpenUserProfile('orders')}
-      />
+        {/* Editorial Footer */}
+        <Footer 
+          onSelectTab={(tab) => setCurrentTab(tab)} 
+          onOpenSupport={() => setIsGlobalSupportOpen(true)}
+          onOpenTracking={() => handleOpenGlobalTracking()}
+          onOpenReturn={() => handleOpenGlobalReturn()}
+          onOpenProfile={handleOpenUserProfile}
+          onOpenOrderHistory={() => handleOpenUserProfile('orders')}
+        />
+      </div>
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { CategoryType, RecommendedProduct } from '../../types';
 import { CATEGORIES } from '../../data/products';
 import { useSasher } from '../../context/SasherContext';
 import { ProductCard } from './ProductCard';
-import { Search, SlidersHorizontal, Sparkles, RefreshCw } from 'lucide-react';
+import { Search, SlidersHorizontal, Sparkles, RefreshCw, ChevronDown, Filter } from 'lucide-react';
 
 interface ProductGridProps {
   onSelectProduct: (product: RecommendedProduct) => void;
@@ -22,15 +22,22 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ onSelectProduct, onExp
   } = useSasher();
 
   const [sortBy, setSortBy] = useState<'match' | 'price-asc' | 'price-desc' | 'popularity'>('match');
+  const [selectedSizeFilter, setSelectedSizeFilter] = useState<string>('All Sizes');
+  const [selectedColorFilter, setSelectedColorFilter] = useState<string>('Colors');
+  const [selectedOccasionFilter, setSelectedOccasionFilter] = useState<string>('Occasions');
 
-  // Filter products by active category and search
+  // Filter products by active category, size, color and search
   const filteredProducts = recommendedProducts.filter(product => {
     const matchesCategory = activeCategory === 'All' || product.category === activeCategory;
     const matchesSearch = 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    
+    const matchesSize = selectedSizeFilter === 'All Sizes' || (product.availableSizes && product.availableSizes.includes(selectedSizeFilter));
+    const matchesColor = selectedColorFilter === 'Colors' || (product.color && product.color.toLowerCase().includes(selectedColorFilter.toLowerCase()));
+
+    return matchesCategory && matchesSearch && matchesSize && matchesColor;
   });
 
   // Sort
@@ -43,128 +50,129 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ onSelectProduct, onExp
   });
 
   return (
-    <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Section Header & Subtitle */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-6 border-b border-[#27272a]/60 gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-mono-tabular uppercase tracking-wider text-[#a1a1aa] mb-1">
-            <span>RECOMMENDED FOR YOUR SESSION</span>
-            <span aria-hidden="true" className="text-[#3f3f46]">·</span>
-            <span className="text-[#e2a876]">{sessionIntent.trendDescription}</span>
-          </div>
-          <h2 className="font-editorial text-3xl sm:text-4xl text-[#f4f4f5]">
-            Curated Discovery Catalog
-          </h2>
-          <p className="text-sm text-[#71717a] mt-1">
-            These recommendations adapt in real time as you browse, gaze, or save items.
-          </p>
-        </div>
-
-        {/* Quick Session Status / Reset */}
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden sm:block">
-            <span className="text-[11px] font-mono-tabular text-[#71717a] block">
-              ACTIVE INTERACTIONS: {sessionIntent.totalInteractions}
-            </span>
-            <span className="text-xs text-[#a1a1aa]">
-              Model Confidence: {Math.round(sessionIntent.confidence * 100)}%
-            </span>
-          </div>
-          
-          <button
-            onClick={resetSession}
-            title="Reset session intent and clear memory"
-            className="p-2.5 rounded-lg border border-[#27272a] hover:border-[#3f3f46] bg-[#121316] text-[#a1a1aa] hover:text-[#f4f4f5] transition-colors cursor-pointer flex items-center gap-1.5 text-xs"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Reset Session</span>
-          </button>
-        </div>
+    <section className="py-8 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+      
+      {/* Section Title */}
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-editorial text-2xl sm:text-3xl text-[#f4f4f5] tracking-tight">
+          All Browsed
+        </h2>
+        <span className="text-xs font-mono text-[#a1a1aa]">
+          {sortedProducts.length} items available
+        </span>
       </div>
 
-      {/* Control Bar: Categories & Search */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+      {/* Compact Filter Bar & Pills */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 pb-4 border-b border-white/[0.08]">
         
-        {/* Interactive Functional Category Filter Buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
-          {CATEGORIES.map(category => {
-            const isActive = activeCategory === category;
-            return (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category as CategoryType)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-medium tracking-wide whitespace-nowrap transition-colors cursor-pointer ${
-                  isActive
-                    ? 'bg-[#f4f4f5] text-[#09090b] shadow-sm font-semibold'
-                    : 'bg-[#18191d] text-[#a1a1aa] hover:text-[#f4f4f5] hover:bg-[#27272a]'
-                }`}
-              >
-                {category}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search & Sort Controls */}
-        <div className="flex items-center gap-3">
-          {/* Search Box */}
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#71717a]" />
-            <input
-              type="text"
-              placeholder="Search silhouettes, materials..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-[#121316] border border-[#27272a] focus:border-[#e2a876] text-xs text-[#f4f4f5] placeholder-[#71717a] outline-none transition-colors"
-            />
+        {/* Compact Filter Pills: [ User ▾ ] [ All Sizes ▾ ] [ Categories ▾ ] [ Colors ▾ ] [ Occasions ▾ ] */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 no-scrollbar flex-wrap">
+          
+          {/* User Filter Dropdown / Toggle */}
+          <div className="px-3.5 py-2 rounded-xl bg-[#151518] hover:bg-[#1a1a1f] border border-white/[0.08] text-xs text-[#d4a373] font-medium flex items-center gap-2 cursor-pointer">
+            <span>User</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
           </div>
 
-          {/* Sort selector */}
+          {/* Sizes Pill */}
+          <select 
+            value={selectedSizeFilter}
+            onChange={(e) => setSelectedSizeFilter(e.target.value)}
+            className="px-3.5 py-2 rounded-xl bg-[#151518] hover:bg-[#1a1a1f] border border-white/[0.08] text-xs text-[#a1a1aa] focus:text-[#f4f4f5] outline-none cursor-pointer appearance-none pr-8 relative"
+            style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%2371717a%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%27%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', backgroundSize: '9px' }}
+          >
+            <option value="All Sizes">All Sizes ▾</option>
+            <option value="S">Size S</option>
+            <option value="M">Size M</option>
+            <option value="L">Size L</option>
+            <option value="XL">Size XL</option>
+          </select>
+
+          {/* Categories Pill / Dropdown */}
+          <select
+            value={activeCategory}
+            onChange={(e) => setActiveCategory(e.target.value as CategoryType)}
+            className="px-3.5 py-2 rounded-xl bg-[#151518] hover:bg-[#1a1a1f] border border-white/[0.08] text-xs text-[#a1a1aa] focus:text-[#f4f4f5] outline-none cursor-pointer appearance-none pr-8"
+            style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%2371717a%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%27%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', backgroundSize: '9px' }}
+          >
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>{cat} ▾</option>
+            ))}
+          </select>
+
+          {/* Colors Pill */}
+          <select
+            value={selectedColorFilter}
+            onChange={(e) => setSelectedColorFilter(e.target.value)}
+            className="px-3.5 py-2 rounded-xl bg-[#151518] hover:bg-[#1a1a1f] border border-white/[0.08] text-xs text-[#a1a1aa] focus:text-[#f4f4f5] outline-none cursor-pointer appearance-none pr-8"
+            style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%2371717a%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%27%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', backgroundSize: '9px' }}
+          >
+            <option value="Colors">Colors ▾</option>
+            <option value="Camel">Camel / Warm</option>
+            <option value="Black">Black / Dark</option>
+            <option value="Beige">Beige / Ivory</option>
+          </select>
+
+          {/* Occasions Pill */}
+          <select
+            value={selectedOccasionFilter}
+            onChange={(e) => setSelectedOccasionFilter(e.target.value)}
+            className="px-3.5 py-2 rounded-xl bg-[#151518] hover:bg-[#1a1a1f] border border-white/[0.08] text-xs text-[#a1a1aa] focus:text-[#f4f4f5] outline-none cursor-pointer appearance-none pr-8"
+            style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%2371717a%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%27%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', backgroundSize: '9px' }}
+          >
+            <option value="Occasions">Occasions ▾</option>
+            <option value="Formal">Formal &amp; Atelier</option>
+            <option value="Casual">Luxury Casual</option>
+          </select>
+
+        </div>
+
+        {/* Far Right: [ Filters ] [ Sort ▾ ] */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => resetSession()}
+            className="px-3.5 py-2 rounded-xl bg-[#151518] hover:bg-[#1a1a1f] border border-white/[0.08] text-xs text-[#a1a1aa] hover:text-[#f4f4f5] transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <Filter className="w-3.5 h-3.5 text-[#d4a373]" />
+            <span>Filters</span>
+          </button>
+
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-3 py-1.5 rounded-lg bg-[#121316] border border-[#27272a] text-xs text-[#a1a1aa] focus:text-[#f4f4f5] outline-none cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-[#151518] hover:bg-[#1a1a1f] border border-white/[0.08] text-xs text-[#a1a1aa] focus:text-[#f4f4f5] outline-none cursor-pointer appearance-none pr-8"
+            style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%2371717a%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%27%2F%3E%3C%2Fsvg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', backgroundSize: '9px' }}
           >
-            <option value="match">Rank: AI Match</option>
-            <option value="popularity">Rank: Popularity</option>
+            <option value="match">Sort: Adaptive Match ▾</option>
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
+            <option value="popularity">Most Popular</option>
           </select>
         </div>
       </div>
 
-      {/* Product Grid: 4 columns desktop, 2 columns tablet, 1 column mobile */}
+      {/* Product Grid - 5 columns on desktop where screen width allows */}
       {sortedProducts.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {sortedProducts.map(product => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+          {sortedProducts.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
               onSelect={onSelectProduct}
               onExplain={onExplainProduct}
-              onShowSimilar={(p) => {
-                setActiveCategory(p.category);
-                onSelectProduct(p);
-              }}
             />
           ))}
         </div>
       ) : (
-        /* Empty State */
-        <div className="py-20 text-center border border-dashed border-[#27272a] rounded-2xl bg-[#121316]/50">
-          <Sparkles className="w-8 h-8 text-[#71717a] mx-auto mb-3" />
-          <h3 className="font-editorial text-2xl text-[#f4f4f5]">No Styles Found</h3>
-          <p className="text-sm text-[#71717a] mt-1 max-w-sm mx-auto">
-            Try adjusting your search criteria or explore other fashion categories in our collection.
-          </p>
+        <div className="py-20 text-center rounded-2xl bg-[#121316] border border-white/[0.08]">
+          <Sparkles className="w-8 h-8 text-[#d4a373] mx-auto mb-3 animate-pulse" />
+          <h3 className="text-lg font-editorial text-[#f4f4f5]">No matching pieces found</h3>
+          <p className="text-xs text-[#a1a1aa] mt-1">Try adjusting your filters or search query.</p>
           <button
-            onClick={() => {
-              setActiveCategory('All');
-              setSearchQuery('');
-            }}
-            className="mt-4 px-4 py-2 bg-[#27272a] hover:bg-[#3f3f46] text-xs text-[#f4f4f5] rounded-lg transition-colors cursor-pointer"
+            onClick={() => { setActiveCategory('All'); setSearchQuery(''); setSelectedSizeFilter('All Sizes'); }}
+            className="mt-4 px-4 py-2 rounded-xl bg-[#d4a373] text-[#0D0D0D] text-xs font-semibold cursor-pointer"
           >
-            Clear Filters
+            Reset Filters
           </button>
         </div>
       )}
