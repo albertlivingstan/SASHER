@@ -29,7 +29,10 @@ import { EvaluationAnalyticsView } from './components/analytics/EvaluationAnalyt
 import { FashionAssistantChatbot } from './components/assistant/FashionAssistantChatbot';
 import { UserProfileModal } from './components/account/UserProfileModal';
 import { ShoppingMarketplaceView } from './components/shopping/ShoppingMarketplaceView';
+import { BrowseView } from './components/browse/BrowseView';
 import { SplashScreen } from './components/ui/SplashScreen';
+import { VisualIntentModal } from './components/eyetracking/VisualIntentModal';
+import { CalibrationModal } from './components/eyetracking/CalibrationModal';
 import { INITIAL_PRODUCTS } from './data/products';
 import { RecommendedProduct, CompletedOrder } from './types';
 import { Sparkles, Eye, X } from 'lucide-react';
@@ -149,9 +152,12 @@ const MainLayout: React.FC = () => {
         
         {/* Top Professional Navigation Bar */}
         <TopNavigation
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
           onOpenCart={() => setIsCartDrawerOpen(true)}
           onOpenProfile={handleOpenUserProfile}
           onOpenSupport={() => setIsGlobalSupportOpen(true)}
+          onOpenWishlist={scrollToCatalog}
         />
 
         {/* Modals & Slide-out Panels */}
@@ -171,6 +177,8 @@ const MainLayout: React.FC = () => {
         <WhyRecommendedModal />
         <CartDrawer />
         <CheckoutModal />
+        <VisualIntentModal />
+        <CalibrationModal />
 
         {/* User Account Profile & Order History Modal */}
         <UserProfileModal
@@ -305,6 +313,13 @@ const MainLayout: React.FC = () => {
 
           {currentTab === 'shopping' && (
             <ShoppingMarketplaceView
+              onSelectProduct={(p) => setSelectedProductForModal(p)}
+              onExplainProduct={(p) => setExplanationModalProduct(p)}
+            />
+          )}
+
+          {currentTab === 'browse' && (
+            <BrowseView
               onSelectProduct={(p) => setSelectedProductForModal(p)}
               onExplainProduct={(p) => setExplanationModalProduct(p)}
             />

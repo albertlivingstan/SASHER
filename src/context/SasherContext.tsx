@@ -11,11 +11,23 @@ import {
   AnomalyDetectionState, 
   CartItem,
   RecommendationExplanation,
-  CompletedOrder
+  CompletedOrder,
+  UserPreferenceProfile,
+  HybridRecommendationWeights,
+  OutfitLook,
+  ProductFeedbackType
 } from '../types';
+import { 
+  DEFAULT_HYBRID_WEIGHTS,
+  computeUserPreferenceProfile,
+  calculateHybridRankings,
+  generateOutfitLook,
+  calculateFeatureSimilarity
+} from '../services/recommendationEngine';
 import { INITIAL_PRODUCTS } from '../data/products';
 import { DEFAULT_PAST_ORDERS } from '../data/defaultOrders';
 import { eyeTracker, GazeCallbackPayload } from '../services/eyeTracker';
+import { RankingService } from '../services/RankingService';
 import { projectSuggestionService, SuggestedProject, GazeProductAnalysis } from '../services/projectSuggestionService';
 import { useAuth } from './AuthContext';
 import { 
@@ -44,9 +56,25 @@ interface SasherContextType {
   dynamicWeights: DynamicWeights;
   resetSession: () => void;
   
+  // Research & Personalization Engine
+  userPreferenceProfile: UserPreferenceProfile;
+  hybridWeights: HybridRecommendationWeights;
+  setHybridWeights: (weights: Partial<HybridRecommendationWeights>) => void;
+  recordFeedback: (productId: string, type: ProductFeedbackType) => void;
+  feedbackMap: Record<string, ProductFeedbackType>;
+  visualIntentMode: 'interaction' | 'webcam' | 'paused';
+  setVisualIntentMode: (mode: 'interaction' | 'webcam' | 'paused') => void;
+  isVisualIntentModalOpen: boolean;
+  setIsVisualIntentModalOpen: (open: boolean) => void;
+  genderFilter: 'All' | 'Women' | 'Men';
+  setGenderFilter: (gender: 'All' | 'Women' | 'Men') => void;
+  getSimilarProducts: (product: Product, limit?: number) => RecommendedProduct[];
+  getOutfitForProduct: (product: Product) => OutfitLook;
+  
   // Eye-Tracking
   isEyeTrackingActive: boolean;
   toggleEyeTracking: () => void;
+  setEyeTrackingActive: (active: boolean) => void;
   isCalibrated: boolean;
   calibrationScore: number;
   openCalibration: () => void;
@@ -126,7 +154,14 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [recentAdaptiveNotification, setRecentAdaptiveNotification] = useState<string | null>(null);
   
   // Eye-tracking state
-  const [isEyeTrackingActive, setIsEyeTrackingActive] = useState<boolean>(true);
+  const [isEyeTrackingActive, setIsEyeTrackingActive] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('sasher_visual_intent_active');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   const [isCalibrated, setIsCalibrated] = useState<boolean>(true);
   const [calibrationScore, setCalibrationScore] = useState<number>(() => user?.calibrationScore ?? 94);
   const [isCalibrationModalOpen, setIsCalibrationModalOpen] = useState<boolean>(false);
@@ -143,6 +178,17 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return projectSuggestionService.analyzeGazedProduct(INITIAL_PRODUCTS[0], 1.2);
   });
   const [isProjectDrawerOpen, setIsProjectDrawerOpen] = useState<boolean>(false);
+
+  // Research & Hybrid Recommendation Configuration
+  const [hybridWeights, setHybridWeightsState] = useState<HybridRecommendationWeights>(DEFAULT_HYBRID_WEIGHTS);
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, ProductFeedbackType>>({});
+  const [visualIntentMode, setVisualIntentMode] = useState<'interaction' | 'webcam' | 'paused'>('interaction');
+  const [isVisualIntentModalOpen, setIsVisualIntentModalOpen] = useState<boolean>(false);
+  const [genderFilter, setGenderFilter] = useState<'All' | 'Women' | 'Men'>('All');
+
+  const setHybridWeights = useCallback((weights: Partial<HybridRecommendationWeights>) => {
+    setHybridWeightsState(prev => ({ ...prev, ...weights }));
+  }, []);
 
   // Security / Anomaly State
   const [anomalyState, setAnomalyState] = useState<AnomalyDetectionState>({
@@ -402,19 +448,44 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     eyeTracker.startTracking();
 
+    let lastCoordTime = 0;
     const unsubscribe = eyeTracker.subscribe((payload: GazeCallbackPayload) => {
-      setLastGazeCoordinates({ x: payload.x, y: payload.y });
+      const now = Date.now();
+      // Throttle coordinate context updates so other debug panels don't thrash
+      if (now - lastCoordTime > 200) {
+        lastCoordTime = now;
+        setLastGazeCoordinates(prev => {
+          if (Math.abs(prev.x - payload.x) > 20 || Math.abs(prev.y - payload.y) > 20) {
+            return { x: payload.x, y: payload.y };
+          }
+          return prev;
+        });
+      }
 
       if (payload.targetElementId) {
-        const prod = products.find(p => p.id === payload.targetElementId);
-        setCurrentGazeTarget({
-          productId: payload.targetElementId,
-          productName: prod?.name || 'Fashion Item',
-          category: (payload.targetCategory as CategoryType) || 'Outerwear',
-          dwellSeconds: payload.dwellSeconds,
-          dwellStart: Date.now() - (payload.dwellSeconds * 1000),
-          status: payload.dwellSeconds >= 1.2 ? 'interest_confirmed' : 'detecting',
-          coordinates: { x: payload.x, y: payload.y }
+        const targetId = payload.targetElementId;
+        const prod = products.find(p => p.id === targetId);
+        const newStatus = payload.dwellSeconds >= 1.2 ? 'interest_confirmed' : 'detecting';
+
+        setCurrentGazeTarget(prev => {
+          if (
+            prev &&
+            prev.productId === targetId &&
+            prev.status === newStatus &&
+            Math.abs(prev.dwellSeconds - payload.dwellSeconds) < 0.3
+          ) {
+            return prev;
+          }
+
+          return {
+            productId: targetId,
+            productName: prod?.name || 'Fashion Item',
+            category: (payload.targetCategory as CategoryType) || 'Outerwear',
+            dwellSeconds: payload.dwellSeconds,
+            dwellStart: Date.now() - (payload.dwellSeconds * 1000),
+            status: newStatus,
+            coordinates: { x: payload.x, y: payload.y }
+          };
         });
 
         // Trigger discrete EYE_GAZE event upon dwell >= 1.2s
@@ -426,7 +497,7 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setActiveSuggestedProject(project);
         }
       } else {
-        setCurrentGazeTarget(null);
+        setCurrentGazeTarget(prev => (prev === null ? null : null));
       }
     });
 
@@ -436,148 +507,123 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [isEyeTrackingActive, products, recordInteraction]);
 
-  // Compute recommended products with explainable scores and MMR diversification
-  const recommendedProducts: RecommendedProduct[] = useMemo(() => {
-    const { session, profile, collaborative, content, popularity, eyeGaze } = dynamicWeights;
-    const catDist = sessionIntent.categoryDistribution;
-
-    // Check which products had eye gaze
-    const gazeProductIds = new Set(
-      interactions.filter(i => i.type === 'EYE_GAZE').map(i => i.productId)
-    );
-
-    // Compute base scores for each product
-    const scoredList = products.map(product => {
-      const isGazeHit = gazeProductIds.has(product.id) || currentGazeTarget?.productId === product.id;
-
-      // 1. Session alignment: category distribution + feature alignment
-      const catAlignment = catDist[product.category] || 0.15;
-      const sSession = catAlignment * 0.7 + (product.featureVector.outerwear * 0.3);
-
-      // 2. Profile alignment (Minimalist / Architectural aesthetic)
-      const sProfile = (product.featureVector.minimalism * 0.6) + (product.featureVector.formal * 0.4);
-
-      // 3. Collaborative filtering
-      const sCollab = product.collaborativeScore || 0.80;
-
-      // 4. Content similarity
-      const sContent = (product.featureVector.minimalism + product.featureVector.warmth) / 2;
-
-      // 5. Popularity prior
-      const sPop = product.popularityScore;
-
-      // 6. Gaze signal: +3.5x boost if actively or previously fixated
-      const sGaze = isGazeHit ? 0.98 : 0.20;
-
-      // Weighted combination
-      let rawScore: number;
-      if (anomalyState.fallbackActive) {
-        // Robust fallback: rely strictly on verified popularity and content, bypass session
-        rawScore = 0.6 * sPop + 0.4 * sContent;
-      } else {
-        rawScore = (
-          session * sSession +
-          profile * sProfile +
-          collaborative * sCollab +
-          content * sContent +
-          popularity * sPop +
-          eyeGaze * sGaze
-        );
-      }
-
-      const matchScore = Math.min(99, Math.max(55, Math.round(rawScore * 100)));
-
-      // Calculate contribution percentages for Explainable AI
-      const totalContr = (session * sSession) + (profile * sProfile) + (collaborative * sCollab) + (content * sContent) + (popularity * sPop) + (eyeGaze * sGaze);
-      const safeContr = totalContr > 0 ? totalContr : 1;
-
-      const sessionPct = Math.round(((session * sSession) / safeContr) * 100);
-      const gazePct = Math.round(((eyeGaze * sGaze) / safeContr) * 100);
-      const profilePct = Math.round(((profile * sProfile) / safeContr) * 100);
-      const contentPct = Math.round(((content * sContent) / safeContr) * 100);
-      const popPct = Math.max(2, 100 - (sessionPct + gazePct + profilePct + contentPct));
-
-      // Natural language explanation reasons
-      const reasons: string[] = [];
-      if (isGazeHit) {
-        reasons.push('High visual dwell detected in your active session');
-      }
-      if (sessionIntent.primaryCategory === product.category) {
-        reasons.push(`Matches your active session trend toward ${product.category.toLowerCase()}`);
-      }
-      if (product.featureVector.minimalism > 0.85) {
-        reasons.push('Aligns with your preference for minimalist architectural cuts');
-      }
-      if (reasons.length < 3) {
-        reasons.push('Frequently chosen by shoppers with similar aesthetic journeys');
-      }
-
-      const explanation: RecommendationExplanation = {
-        matchScore,
-        sessionContribution: sessionPct,
-        visualAttentionContribution: gazePct,
-        profileContribution: profilePct,
-        contentSimilarityContribution: contentPct,
-        popularityContribution: popPct,
-        primaryReasons: reasons,
-        technicalDetails: {
-          wSession: session,
-          wGaze: eyeGaze,
-          wProfile: profile,
-          wCollab: collaborative,
-          wContent: content,
-          wPopularity: popularity,
-          dotProduct: parseFloat(rawScore.toFixed(3)),
-          mmrScore: parseFloat((rawScore * 0.94).toFixed(3)),
-          diversityPenalty: 0.06
-        }
-      };
-
-      const inWishlist = wishlistIds.has(product.id);
-      return {
-        ...product,
-        wishlist: inWishlist,
-        wishlistStatus: (inWishlist ? 'in_wishlist' : 'none') as 'in_wishlist' | 'none',
-        isWishlisted: inWishlist,
-        explanation,
-        isGazeInfluenced: isGazeHit
-      };
-    });
-
-    // Apply MMR (Maximal Marginal Relevance) Diversification (λ = 0.72)
-    // Prevents list from being 100% single category
-    const selected: RecommendedProduct[] = [];
-    const remaining = [...scoredList].sort((a, b) => b.explanation.matchScore - a.explanation.matchScore);
-
-    const lambda = 0.72;
-    const categoryCountsInTop: Record<string, number> = {};
-
-    while (remaining.length > 0 && selected.length < scoredList.length) {
-      let bestIdx = 0;
-      let bestMmrScore = -Infinity;
-
-      for (let i = 0; i < remaining.length; i++) {
-        const item = remaining[i];
-        const relevance = item.explanation.matchScore / 100;
-        
-        // Redundancy penalty if same category is already heavily represented in selected
-        const count = categoryCountsInTop[item.category] || 0;
-        const redundancy = count * 0.18;
-
-        const mmr = lambda * relevance - (1 - lambda) * redundancy;
-        if (mmr > bestMmrScore) {
-          bestMmrScore = mmr;
-          bestIdx = i;
-        }
-      }
-
-      const chosen = remaining.splice(bestIdx, 1)[0];
-      categoryCountsInTop[chosen.category] = (categoryCountsInTop[chosen.category] || 0) + 1;
-      selected.push(chosen);
+  // User explicit feedback handler (Like / Dislike / More Like This)
+  const recordFeedback = useCallback((productId: string, type: ProductFeedbackType) => {
+    setFeedbackMap(prev => ({ ...prev, [productId]: type }));
+    const product = products.find(p => p.id === productId);
+    const category = product?.category || 'Outerwear';
+    
+    let interactionType: InteractionType = 'FEEDBACK_LIKE';
+    if (type === 'DISLIKE') {
+      interactionType = 'FEEDBACK_DISLIKE';
+      setRecentAdaptiveNotification(`Item suppressed. Similar silhouettes deprioritized.`);
+    } else if (type === 'MORE_LIKE_THIS') {
+      interactionType = 'FEEDBACK_MORE_LIKE_THIS';
+      setRecentAdaptiveNotification(`Preferences updated. Prioritizing styles similar to "${product?.name}".`);
+    } else {
+      interactionType = 'FEEDBACK_LIKE';
+      setRecentAdaptiveNotification(`Saved "${product?.name}" to your taste profile.`);
     }
 
-    return selected;
-  }, [products, dynamicWeights, sessionIntent, interactions, currentGazeTarget, anomalyState.fallbackActive]);
+    recordInteraction(interactionType, productId, category, 1000);
+  }, [products, recordInteraction]);
+
+  // Listen to RankingService hyperparameter weight updates from Research Dashboard
+  const [rankingConfigVersion, setRankingConfigVersion] = useState(0);
+
+  useEffect(() => {
+    return RankingService.subscribe(() => {
+      setRankingConfigVersion(v => v + 1);
+    });
+  }, []);
+
+  // Compute live research-grade User Preference Profile
+  const userPreferenceProfile = useMemo(() => {
+    return computeUserPreferenceProfile(interactions, products, feedbackMap);
+  }, [interactions, products, feedbackMap]);
+
+  // Compute recommended products via technically defensible weighted HybridScore formula:
+  // HybridScore(i) = α × CF(i) + β × CBF(i) + γ × Session(i) + δ × Popularity(i) + ε × ColdStart(i)
+  const recommendedProducts: RecommendedProduct[] = useMemo(() => {
+    const activeGazeId = isEyeTrackingActive ? (currentGazeTarget?.productId || null) : null;
+    const ranked = RankingService.rankProducts(
+      products,
+      interactions,
+      user?.savedPreferences || [],
+      searchQuery,
+      activeGazeId,
+      products.length
+    );
+
+    // Sync live wishlist status
+    return ranked.map(p => {
+      const inWishlist = wishlistIds.has(p.id);
+      return {
+        ...p,
+        wishlist: inWishlist,
+        wishlistStatus: (inWishlist ? 'in_wishlist' : 'none') as 'in_wishlist' | 'none',
+        isWishlisted: inWishlist
+      };
+    });
+  }, [products, interactions, user?.savedPreferences, searchQuery, isEyeTrackingActive, currentGazeTarget?.productId, wishlistIds, rankingConfigVersion]);
+
+  // Get similar products for Quick View / Complete Look
+  const getSimilarProducts = useCallback((product: Product, limit = 4): RecommendedProduct[] => {
+    const scored = products
+      .filter(p => p.id !== product.id)
+      .map(p => ({
+        ...p,
+        similarity: calculateFeatureSimilarity(p.featureVector, product.featureVector)
+      }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit);
+
+    return scored.map(item => {
+      const matchScore = Math.round(item.similarity * 100);
+      const inWishlist = wishlistIds.has(item.id);
+      return {
+        ...item,
+        wishlist: inWishlist,
+        wishlistStatus: inWishlist ? 'in_wishlist' : 'none',
+        isWishlisted: inWishlist,
+        explanation: {
+          matchScore,
+          sessionContribution: 30,
+          visualAttentionContribution: 20,
+          profileContribution: 30,
+          contentSimilarityContribution: 20,
+          popularityContribution: 10,
+          primaryReasons: [
+            `High textile & cut similarity (${matchScore}%) to ${product.name}`,
+            `Shares complementary ${product.style} aesthetic`
+          ],
+          signals: {
+            styleSimilarity: matchScore,
+            colorPreference: 85,
+            categoryPreference: item.category === product.category ? 95 : 70,
+            previousInteraction: 80,
+            browsingBehavior: 85
+          },
+          technicalDetails: {
+            wSession: 0.35,
+            wGaze: 0.25,
+            wProfile: 0.35,
+            wCollab: 0.15,
+            wContent: 0.25,
+            wPopularity: 0.15,
+            dotProduct: parseFloat(item.similarity.toFixed(3)),
+            mmrScore: parseFloat((item.similarity * 0.95).toFixed(3)),
+            diversityPenalty: 0.05
+          }
+        }
+      } as RecommendedProduct;
+    });
+  }, [products, wishlistIds]);
+
+  // Dynamic Outfit Look bundle ("Complete the Look")
+  const getOutfitForProduct = useCallback((product: Product): OutfitLook => {
+    return generateOutfitLook(product, products);
+  }, [products]);
 
   // Wishlist toggle with Firestore persistence
   const toggleWishlist = (productId: string) => {
@@ -637,14 +683,34 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const toggleEyeTracking = () => {
     setIsEyeTrackingActive(prev => {
       const next = !prev;
+      try {
+        localStorage.setItem('sasher_visual_intent_active', String(next));
+      } catch {}
       if (!next) {
         eyeTracker.pauseTracking();
         setCurrentGazeTarget(null);
+        setRecentAdaptiveNotification('Visual Intent paused. Recommendations reverting to baseline hybrid weights.');
       } else {
         eyeTracker.startTracking();
+        setRecentAdaptiveNotification('Visual Intent activated. Real-time attention signals now adapt recommendation slates.');
       }
       return next;
     });
+  };
+
+  const setEyeTrackingActive = (active: boolean) => {
+    setIsEyeTrackingActive(active);
+    try {
+      localStorage.setItem('sasher_visual_intent_active', String(active));
+    } catch {}
+    if (!active) {
+      eyeTracker.pauseTracking();
+      setCurrentGazeTarget(null);
+      setRecentAdaptiveNotification('Visual Intent turned off. Recommendations operating on standard profile baselines.');
+    } else {
+      eyeTracker.startTracking();
+      setRecentAdaptiveNotification('Visual Intent turned on. Attention tracking and dwell signals enabled.');
+    }
   };
 
   const openCalibration = () => setIsCalibrationModalOpen(true);
@@ -803,6 +869,7 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         resetSession,
         isEyeTrackingActive,
         toggleEyeTracking,
+        setEyeTrackingActive,
         isCalibrated,
         calibrationScore,
         openCalibration,
@@ -824,6 +891,22 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         anomalyState,
         simulateRoboticAttack,
         resetAnomalyState,
+        
+        // Research & Personalization Engine
+        userPreferenceProfile,
+        hybridWeights,
+        setHybridWeights,
+        recordFeedback,
+        feedbackMap,
+        visualIntentMode,
+        setVisualIntentMode,
+        isVisualIntentModalOpen,
+        setIsVisualIntentModalOpen,
+        genderFilter,
+        setGenderFilter,
+        getSimilarProducts,
+        getOutfitForProduct,
+
         wishlistIds,
         toggleWishlist,
         cart,

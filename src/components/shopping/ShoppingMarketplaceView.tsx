@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSasher } from '../../context/SasherContext';
 import { RecommendedProduct } from '../../types';
 import { INITIAL_PRODUCTS } from '../../data/products';
@@ -88,57 +88,61 @@ export const ShoppingMarketplaceView: React.FC<ShoppingMarketplaceViewProps> = (
   }, [skip, limit]);
 
   // Combine fetched API products with local curated items
-  const allShoppingItems = [
-    ...recommendedProducts,
-    ...apiProducts,
-    ...INITIAL_PRODUCTS.filter(p => !recommendedProducts.some(r => r.id === p.id) && !apiProducts.some(a => a.id === p.id))
-  ] as RecommendedProduct[];
+  const allShoppingItems = useMemo(() => {
+    return [
+      ...recommendedProducts,
+      ...apiProducts,
+      ...INITIAL_PRODUCTS.filter(p => !recommendedProducts.some(r => r.id === p.id) && !apiProducts.some(a => a.id === p.id))
+    ] as RecommendedProduct[];
+  }, [recommendedProducts, apiProducts]);
 
-  const filteredItems = allShoppingItems.filter(item => {
-    let matchesCat = true;
-    const catLower = selectedCategory.toLowerCase();
-    const itemCat = (item.category as string).toLowerCase();
-    
-    if (selectedCategory !== 'All') {
-      if (catLower === 'women') {
-        matchesCat = item.gender === 'Women' || item.gender === 'Unisex' || itemCat === 'dresses';
-      } else if (catLower === 'men') {
-        matchesCat = item.gender === 'Men' || item.gender === 'Unisex' || itemCat === 'tailoring';
-      } else if (catLower === 'new arrivals') {
-        matchesCat = Boolean((item.popularityScore || 0) > 0.9 || item.id.includes('01') || item.id.includes('02') || item.id.includes('dummy'));
-      } else if (catLower === 'dresses') {
-        matchesCat = itemCat === 'dresses' || Boolean(item.articleType?.toLowerCase().includes('dress') || item.name.toLowerCase().includes('dress'));
-      } else if (catLower === 'tops') {
-        matchesCat = itemCat === 'tops' || Boolean(item.articleType?.toLowerCase().includes('top') || item.name.toLowerCase().includes('top') || item.name.toLowerCase().includes('shirt') || item.name.toLowerCase().includes('polo'));
-      } else if (catLower === 'shirts') {
-        matchesCat = Boolean(item.articleType?.toLowerCase().includes('shirt') || item.name.toLowerCase().includes('shirt'));
-      } else if (catLower === 'trousers') {
-        matchesCat = itemCat === 'trousers' || Boolean(item.articleType?.toLowerCase().includes('trouser') || item.name.toLowerCase().includes('trouser') || item.name.toLowerCase().includes('pant'));
-      } else if (catLower === 'jeans') {
-        matchesCat = Boolean(item.articleType?.toLowerCase().includes('jean') || item.name.toLowerCase().includes('jean') || item.description?.toLowerCase().includes('denim'));
-      } else if (catLower === 'jackets') {
-        matchesCat = itemCat === 'outerwear' || Boolean(item.articleType?.toLowerCase().includes('jacket') || item.name.toLowerCase().includes('jacket') || item.name.toLowerCase().includes('coat'));
-      } else if (catLower === 'blazers') {
-        matchesCat = itemCat === 'tailoring' || Boolean(item.articleType?.toLowerCase().includes('blazer') || item.name.toLowerCase().includes('blazer'));
-      } else if (catLower === 'shoes') {
-        matchesCat = itemCat === 'footwear' || Boolean(item.articleType?.toLowerCase().includes('boot') || item.articleType?.toLowerCase().includes('shoe') || item.name.toLowerCase().includes('boot') || item.name.toLowerCase().includes('sneaker'));
-      } else if (catLower === 'accessories') {
-        matchesCat = itemCat === 'accessories' || itemCat === 'watches & jewelry';
-      } else if (catLower === 'bags') {
-        matchesCat = itemCat === 'bags' || Boolean(item.name.toLowerCase().includes('bag') || item.name.toLowerCase().includes('tote') || item.name.toLowerCase().includes('backpack'));
-      } else if (catLower === 'occasions') {
-        matchesCat = Boolean(item.style === 'Tailored' || item.style === 'Architectural' || item.price > 15000);
-      } else if (catLower === 'sale') {
-        matchesCat = Boolean(item.originalPrice && item.originalPrice > item.price);
-      } else {
-        matchesCat = itemCat === catLower || Boolean(item.subcategory?.toLowerCase().includes(catLower));
+  const filteredItems = useMemo(() => {
+    return allShoppingItems.filter(item => {
+      let matchesCat = true;
+      const catLower = selectedCategory.toLowerCase();
+      const itemCat = (item.category as string).toLowerCase();
+      
+      if (selectedCategory !== 'All') {
+        if (catLower === 'women') {
+          matchesCat = item.gender === 'Women' || item.gender === 'Unisex' || itemCat === 'dresses';
+        } else if (catLower === 'men') {
+          matchesCat = item.gender === 'Men' || item.gender === 'Unisex' || itemCat === 'tailoring';
+        } else if (catLower === 'new arrivals') {
+          matchesCat = Boolean((item.popularityScore || 0) > 0.9 || item.id.includes('01') || item.id.includes('02') || item.id.includes('dummy'));
+        } else if (catLower === 'dresses') {
+          matchesCat = itemCat === 'dresses' || Boolean(item.articleType?.toLowerCase().includes('dress') || item.name.toLowerCase().includes('dress'));
+        } else if (catLower === 'tops') {
+          matchesCat = itemCat === 'tops' || Boolean(item.articleType?.toLowerCase().includes('top') || item.name.toLowerCase().includes('top') || item.name.toLowerCase().includes('shirt') || item.name.toLowerCase().includes('polo'));
+        } else if (catLower === 'shirts') {
+          matchesCat = Boolean(item.articleType?.toLowerCase().includes('shirt') || item.name.toLowerCase().includes('shirt'));
+        } else if (catLower === 'trousers') {
+          matchesCat = itemCat === 'trousers' || Boolean(item.articleType?.toLowerCase().includes('trouser') || item.name.toLowerCase().includes('trouser') || item.name.toLowerCase().includes('pant'));
+        } else if (catLower === 'jeans') {
+          matchesCat = Boolean(item.articleType?.toLowerCase().includes('jean') || item.name.toLowerCase().includes('jean') || item.description?.toLowerCase().includes('denim'));
+        } else if (catLower === 'jackets') {
+          matchesCat = itemCat === 'outerwear' || Boolean(item.articleType?.toLowerCase().includes('jacket') || item.name.toLowerCase().includes('jacket') || item.name.toLowerCase().includes('coat'));
+        } else if (catLower === 'blazers') {
+          matchesCat = itemCat === 'tailoring' || Boolean(item.articleType?.toLowerCase().includes('blazer') || item.name.toLowerCase().includes('blazer'));
+        } else if (catLower === 'shoes') {
+          matchesCat = itemCat === 'footwear' || Boolean(item.articleType?.toLowerCase().includes('boot') || item.articleType?.toLowerCase().includes('shoe') || item.name.toLowerCase().includes('boot') || item.name.toLowerCase().includes('sneaker'));
+        } else if (catLower === 'accessories') {
+          matchesCat = itemCat === 'accessories' || itemCat === 'watches & jewelry';
+        } else if (catLower === 'bags') {
+          matchesCat = itemCat === 'bags' || Boolean(item.name.toLowerCase().includes('bag') || item.name.toLowerCase().includes('tote') || item.name.toLowerCase().includes('backpack'));
+        } else if (catLower === 'occasions') {
+          matchesCat = Boolean(item.style === 'Tailored' || item.style === 'Architectural' || item.price > 15000);
+        } else if (catLower === 'sale') {
+          matchesCat = Boolean(item.originalPrice && item.originalPrice > item.price);
+        } else {
+          matchesCat = itemCat === catLower || Boolean(item.subcategory?.toLowerCase().includes(catLower));
+        }
       }
-    }
 
-    const matchesQuery = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.brand.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesPrice = item.price <= priceRange;
-    return matchesCat && matchesQuery && matchesPrice;
-  });
+      const matchesQuery = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.brand.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesPrice = item.price <= priceRange;
+      return matchesCat && matchesQuery && matchesPrice;
+    });
+  }, [allShoppingItems, selectedCategory, searchQuery, priceRange]);
 
   return (
     <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

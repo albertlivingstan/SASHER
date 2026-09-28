@@ -1,0 +1,12 @@
+user_id,segment,historical_interaction_count,preferred_categories,preferred_budget_tier
+user-cold-01,NEW_USER,0,,Under ₹3000
+user-cold-02,NEW_USER,1,Outerwear,₹3000–₹5000
+user-cold-03,NEW_USER,0,,₹5000+
+user-warm-01,WARM_USER,4,Tailoring;Outerwear,₹5000+
+user-warm-02,WARM_USER,5,Dresses;Footwear,₹3000–₹5000
+user-warm-03,WARM_USER,6,Tops;Trousers,Under ₹3000
+user-active-01,ACTIVE_USER,24,Outerwear;Tailoring;Knitwear,₹5000+
+user-active-02,ACTIVE_USER,19,Dresses;Accessories;Footwear,₹3000–₹5000
+user-active-03,ACTIVE_USER,31,Tailoring;Trousers;Accessories,₹5000+
+user-active-04,ACTIVE_USER,22,Tops;Trousers;Footwear,Under ₹3000
+user-active-05,ACTIVE_USER,18,Outerwear;Knitwear,₹5000+

@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSasher } from '../../context/SasherContext';
-import { eyeTracker, EyeTrackerLiveAnalytics } from '../../services/eyeTracker';
+import { eyeTracker, GazeCallbackPayload } from '../../services/eyeTracker';
 import { CheckCircle2 } from 'lucide-react';
 
 interface CoordinateSample {
@@ -10,122 +10,105 @@ interface CoordinateSample {
 }
 
 // Temporal smoothing configuration constants
-const MOVING_AVERAGE_WINDOW_SIZE = 7; // Number of temporal frames to average
-const SACCADE_THRESHOLD_PX = 135;     // Large rapid eye shift threshold: flushes buffer to prevent drag
-const JITTER_DEADZONE_PX = 0.85;      // Deadzone threshold to suppress sub-pixel ocular tremors
+const MOVING_AVERAGE_WINDOW_SIZE = 7;
+const SACCADE_THRESHOLD_PX = 135;
+const JITTER_DEADZONE_PX = 0.85;
 
 export const GazeReticleOverlay: React.FC = () => {
   const { 
     isEyeTrackingActive, 
-    lastGazeCoordinates, 
-    currentGazeTarget,
-    calibrationScore 
+    currentGazeTarget 
   } = useSasher();
 
-  const [analytics, setAnalytics] = useState<EyeTrackerLiveAnalytics | null>(null);
-
-  // Initial smoothed coordinate position
-  const [smoothedCoords, setSmoothedCoords] = useState<{ x: number; y: number }>(() => ({
-    x: lastGazeCoordinates.x || (typeof window !== 'undefined' ? window.innerWidth / 2 : 720),
-    y: lastGazeCoordinates.y || (typeof window !== 'undefined' ? window.innerHeight / 2 : 450)
-  }));
+  const reticleRef = useRef<HTMLDivElement | null>(null);
+  const progressCircleRef = useRef<SVGCircleElement | null>(null);
 
   // History buffer for sliding window temporal moving average
   const historyBufferRef = useRef<CoordinateSample[]>([]);
-  const currentSmoothedRef = useRef(smoothedCoords);
+  const currentSmoothedRef = useRef({ x: 720, y: 450 });
 
-  // Subscribe to live eye-tracker telemetry stream
+  const radius = 22;
+  const circumference = 2 * Math.PI * radius;
+
+  // Direct high-performance eye-tracker subscription bypassing React re-render cycles
   useEffect(() => {
     if (!isEyeTrackingActive) {
       historyBufferRef.current = [];
       return;
     }
 
-    const unsubscribe = eyeTracker.subscribeAnalytics((data) => {
-      setAnalytics(data);
+    const unsubscribe = eyeTracker.subscribe((payload: GazeCallbackPayload) => {
+      const rawX = payload.x;
+      const rawY = payload.y;
+      if (typeof rawX !== 'number' || typeof rawY !== 'number') return;
+
+      const now = performance.now();
+      const history = historyBufferRef.current;
+
+      // Detect saccadic eye movements
+      if (history.length > 0) {
+        const lastSample = history[history.length - 1];
+        const jumpDistance = Math.hypot(rawX - lastSample.x, rawY - lastSample.y);
+        if (jumpDistance > SACCADE_THRESHOLD_PX) {
+          history.length = 0;
+        }
+      }
+
+      history.push({ x: rawX, y: rawY, time: now });
+      if (history.length > MOVING_AVERAGE_WINDOW_SIZE) {
+        history.shift();
+      }
+
+      // Compute weighted moving average
+      let totalWeight = 0;
+      let weightedSumX = 0;
+      let weightedSumY = 0;
+
+      for (let i = 0; i < history.length; i++) {
+        const weight = i + 1;
+        weightedSumX += history[i].x * weight;
+        weightedSumY += history[i].y * weight;
+        totalWeight += weight;
+      }
+
+      const filteredX = weightedSumX / totalWeight;
+      const filteredY = weightedSumY / totalWeight;
+
+      const prev = currentSmoothedRef.current;
+      const displacement = Math.hypot(filteredX - prev.x, filteredY - prev.y);
+
+      if (displacement > JITTER_DEADZONE_PX) {
+        currentSmoothedRef.current = { x: filteredX, y: filteredY };
+        if (reticleRef.current) {
+          reticleRef.current.style.transform = `translate3d(${filteredX - 30}px, ${filteredY - 30}px, 0)`;
+        }
+      }
+
+      // Update dwell progress arc directly in DOM to avoid state thrash
+      if (progressCircleRef.current) {
+        const dwellProgress = Math.min(100, Math.round((payload.dwellSeconds / 1.2) * 100));
+        const offset = circumference - (dwellProgress / 100) * circumference;
+        progressCircleRef.current.style.strokeDashoffset = `${offset}`;
+        progressCircleRef.current.style.stroke = payload.dwellSeconds >= 1.2 ? '#10b981' : '#ff6b1a';
+      }
     });
 
     return () => unsubscribe();
-  }, [isEyeTrackingActive]);
-
-  // Temporal Smoothing Filter: Sliding-Window Weighted Moving Average with Outlier & Jitter Suppression
-  useEffect(() => {
-    if (!isEyeTrackingActive) return;
-
-    const rawX = lastGazeCoordinates.x;
-    const rawY = lastGazeCoordinates.y;
-    if (typeof rawX !== 'number' || typeof rawY !== 'number') return;
-
-    const now = performance.now();
-    const history = historyBufferRef.current;
-
-    // Detect saccadic eye movements (rapid re-centering across screen)
-    if (history.length > 0) {
-      const lastSample = history[history.length - 1];
-      const jumpDistance = Math.hypot(rawX - lastSample.x, rawY - lastSample.y);
-      
-      // If user performed an intentional saccadic jump, flush the history buffer
-      // to eliminate phase lag and snap reticle instantly to the new target
-      if (jumpDistance > SACCADE_THRESHOLD_PX) {
-        history.length = 0;
-      }
-    }
-
-    // Append current raw coordinate sample
-    history.push({ x: rawX, y: rawY, time: now });
-
-    // Restrict history to sliding window size
-    if (history.length > MOVING_AVERAGE_WINDOW_SIZE) {
-      history.shift();
-    }
-
-    // Compute temporal weighted moving average
-    // Recent samples receive progressively higher weights (1, 2, ... N) to minimize phase lag
-    let totalWeight = 0;
-    let weightedSumX = 0;
-    let weightedSumY = 0;
-
-    for (let i = 0; i < history.length; i++) {
-      const weight = i + 1;
-      weightedSumX += history[i].x * weight;
-      weightedSumY += history[i].y * weight;
-      totalWeight += weight;
-    }
-
-    const filteredX = weightedSumX / totalWeight;
-    const filteredY = weightedSumY / totalWeight;
-
-    // Anti-jitter deadzone check: suppress involuntary physiological micro-tremors (< 0.85px)
-    const prev = currentSmoothedRef.current;
-    const displacement = Math.hypot(filteredX - prev.x, filteredY - prev.y);
-
-    if (displacement > JITTER_DEADZONE_PX) {
-      const nextPoint = { x: filteredX, y: filteredY };
-      currentSmoothedRef.current = nextPoint;
-      setSmoothedCoords(nextPoint);
-    }
-  }, [isEyeTrackingActive, lastGazeCoordinates.x, lastGazeCoordinates.y]);
+  }, [isEyeTrackingActive, circumference]);
 
   if (!isEyeTrackingActive) return null;
 
-  const { x, y } = smoothedCoords;
-
   const dwellSeconds = currentGazeTarget?.dwellSeconds || 0;
-  const dwellProgress = Math.min(100, Math.round((dwellSeconds / 1.2) * 100));
   const isInterestLocked = dwellSeconds >= 1.2 || currentGazeTarget?.status === 'interest_confirmed';
-
-  // SVG circular radius
-  const radius = 22;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (dwellProgress / 100) * circumference;
 
   return (
     <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden font-sans select-none">
-      {/* Temporally Filtered Gaze Reticle at coordinates (x, y) */}
+      {/* Temporally Filtered Gaze Reticle */}
       <div 
-        className="absolute top-0 left-0 transition-transform duration-100 ease-out will-change-transform"
+        ref={reticleRef}
+        className="absolute top-0 left-0 transition-transform duration-75 ease-out will-change-transform"
         style={{
-          transform: `translate3d(${x - 30}px, ${y - 30}px, 0)`
+          transform: `translate3d(${currentSmoothedRef.current.x - 30}px, ${currentSmoothedRef.current.y - 30}px, 0)`
         }}
       >
         <div className="relative w-[60px] h-[60px] flex items-center justify-center">
@@ -142,17 +125,18 @@ export const GazeReticleOverlay: React.FC = () => {
             />
             {/* Active Dwell Progress Arc */}
             <circle
+              ref={progressCircleRef}
               cx="30"
               cy="30"
               r={radius}
               stroke={isInterestLocked ? '#10b981' : '#ff6b1a'}
               strokeWidth="2.5"
               strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
+              strokeDashoffset={circumference}
               strokeLinecap="round"
               fill="transparent"
               style={{
-                transition: 'stroke-dashoffset 0.1s linear, stroke 0.2s ease'
+                transition: 'stroke-dashoffset 0.08s linear, stroke 0.2s ease'
               }}
             />
           </svg>

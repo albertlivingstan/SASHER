@@ -7,6 +7,7 @@ import {
 import { TelemetryTrendChart } from './TelemetryTrendChart';
 import { ProductDeepResearchSection } from './ProductDeepResearchSection';
 import { ModelComparisonGraphicalChart } from './ModelComparisonGraphicalChart';
+import { HybridWeightsTuningSection } from './HybridWeightsTuningSection';
 import { 
   BarChart3, 
   Layers, 
@@ -18,7 +19,8 @@ import {
   FileText,
   Activity,
   TrendingUp,
-  Cpu
+  Cpu,
+  Sliders
 } from 'lucide-react';
 
 export const ResearchDashboardView: React.FC = () => {
@@ -64,6 +66,13 @@ export const ResearchDashboardView: React.FC = () => {
       {/* Quick Jump Subnav */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-[#27272a]/40 text-xs font-mono tabular-nums">
         <span className="text-[#71717a] uppercase text-[10px] mr-1">Jump to:</span>
+        <button
+          onClick={() => scrollToSection('section-hybrid-tuning')}
+          className="px-3 py-1.5 rounded-lg bg-[#d4a373]/15 text-[#d4a373] border border-[#d4a373]/30 font-medium transition-colors flex items-center gap-1.5"
+        >
+          <Sliders className="w-3 h-3 text-[#d4a373]" />
+          <span>HybridScore Weights</span>
+        </button>
         <button
           onClick={() => scrollToSection('section-metrics')}
           className="px-3 py-1.5 rounded-lg bg-[#18191d] hover:bg-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5] transition-colors"
@@ -164,6 +173,9 @@ export const ResearchDashboardView: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {/* HYBRID RECOMMENDATION WEIGHTS HYPERPARAMETER TUNING SECTION */}
+      <HybridWeightsTuningSection />
 
       {/* 24-HOUR HOURLY LATENCY & RECOMMENDATION VOLUME TREND CHART (Chart.js Integration) */}
       <div id="section-telemetry-trend" className="scroll-mt-24">

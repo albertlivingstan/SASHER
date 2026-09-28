@@ -1,5 +1,7 @@
 import React from 'react';
 import { LogoEmblem } from '../ui/LogoEmblem';
+import { useSasher } from '../../context/SasherContext';
+import { CategoryType } from '../../types';
 import { 
   Home, 
   User, 
@@ -9,7 +11,8 @@ import {
   ShoppingBag, 
   Clock, 
   Sparkles,
-  Search
+  Search,
+  Sliders
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,13 +28,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenProfile,
   onOpenWishlist 
 }) => {
+  const { setActiveCategory, setGenderFilter } = useSasher();
+
   const navItems = [
     { id: 'discover', label: 'Home', icon: Home },
-    { id: 'user_profile', label: 'User', icon: User, action: () => onOpenProfile('profile') },
     { id: 'browse', label: 'Browse', icon: Grid },
-    { id: 'favorites', label: 'Favorites', icon: Heart, action: onOpenWishlist },
-    { id: 'insights', label: 'Analytics', icon: BarChart3 },
     { id: 'shopping', label: 'Shopping', icon: ShoppingBag },
+    { id: 'research', label: 'Research', icon: Sliders },
+    { id: 'insights', label: 'Analytics', icon: BarChart3 },
+    { id: 'user_profile', label: 'User', icon: User, action: () => onOpenProfile('profile') },
+    { id: 'favorites', label: 'Favorites', icon: Heart, action: onOpenWishlist },
     { id: 'history', label: 'History', icon: Clock, action: () => onOpenProfile('orders') },
     { id: 'gaze_studio', label: 'Concepts', icon: Sparkles },
   ];
@@ -97,10 +103,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Fashion Categories
           </div>
           <div className="grid grid-cols-2 gap-1 text-[11px] text-[#a1a1aa] font-medium px-1">
-            {['Women', 'Men', 'New Arrivals', 'Dresses', 'Tops', 'Shirts', 'Trousers', 'Jeans', 'Jackets', 'Blazers', 'Shoes', 'Bags', 'Accessories', 'Occasions', 'Sale'].map((cat) => (
+            {['Women', 'Men', 'Dresses', 'Tops', 'Trousers', 'Footwear', 'Accessories', 'Outerwear', 'Tailoring', 'Knitwear'].map((cat) => (
               <button
                 key={cat}
-                onClick={() => setCurrentTab('shopping')}
+                onClick={() => {
+                  if (cat === 'Women' || cat === 'Men') {
+                    setGenderFilter(cat);
+                    setActiveCategory('All');
+                  } else {
+                    setActiveCategory(cat as CategoryType);
+                  }
+                  setCurrentTab('browse');
+                }}
                 className="text-left px-2.5 py-1.5 rounded-lg hover:bg-white/[0.04] hover:text-[#f4f4f5] transition-colors truncate cursor-pointer"
               >
                 {cat}
