@@ -3,7 +3,7 @@ import { CategoryType, RecommendedProduct } from '../../types';
 import { CATEGORIES } from '../../data/products';
 import { useSasher } from '../../context/SasherContext';
 import { ProductCard } from './ProductCard';
-import { Search, SlidersHorizontal, Sparkles, RefreshCw, ChevronDown, Filter } from 'lucide-react';
+import { Search, SlidersHorizontal, Sparkles, RefreshCw, ChevronDown, Filter, Flame, Route } from 'lucide-react';
 
 interface ProductGridProps {
   onSelectProduct: (product: RecommendedProduct) => void;
@@ -25,6 +25,40 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ onSelectProduct, onExp
   const [selectedSizeFilter, setSelectedSizeFilter] = useState<string>('All Sizes');
   const [selectedColorFilter, setSelectedColorFilter] = useState<string>('Colors');
   const [selectedOccasionFilter, setSelectedOccasionFilter] = useState<string>('Occasions');
+  const [isHeatmapActive, setIsHeatmapActive] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sasher_merchandiser_heatmap') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [visualizationMode, setVisualizationMode] = useState<'intensity' | 'path'>(() => {
+    try {
+      return (localStorage.getItem('sasher_gaze_viz_mode') as 'intensity' | 'path') || 'intensity';
+    } catch {
+      return 'intensity';
+    }
+  });
+
+  const toggleHeatmap = () => {
+    setIsHeatmapActive(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('sasher_merchandiser_heatmap', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const toggleVizMode = () => {
+    setVisualizationMode(prev => {
+      const next = prev === 'intensity' ? 'path' : 'intensity';
+      try {
+        localStorage.setItem('sasher_gaze_viz_mode', next);
+      } catch {}
+      return next;
+    });
+  };
 
   // Filter products by active category, size, color and search
   const filteredProducts = recommendedProducts.filter(product => {
@@ -127,8 +161,45 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ onSelectProduct, onExp
 
         </div>
 
-        {/* Far Right: [ Filters ] [ Sort ▾ ] */}
+        {/* Far Right: [ Heatmap ] [ Filters ] [ Sort ▾ ] */}
         <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={toggleHeatmap}
+            className={`px-3 py-2 rounded-xl border text-xs font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+              isHeatmapActive
+                ? 'bg-amber-500/20 text-[#d4a373] border-[#d4a373] font-semibold shadow-sm'
+                : 'bg-[#151518] hover:bg-[#1a1a1f] border-white/[0.08] text-[#a1a1aa]'
+            }`}
+            title="Toggle Merchandiser Dwell Heatmap"
+          >
+            <Flame className={`w-3.5 h-3.5 ${isHeatmapActive ? 'fill-current text-[#d4a373]' : 'text-[#71717a]'}`} />
+            <span>Heatmap {isHeatmapActive ? 'ON' : 'OFF'}</span>
+          </button>
+
+          {isHeatmapActive && (
+            <button
+              onClick={toggleVizMode}
+              className={`px-3 py-2 rounded-xl border text-xs font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                visualizationMode === 'path'
+                  ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300 font-semibold'
+                  : 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-semibold'
+              }`}
+              title="Toggle between 'Intensity' (dwell time) and 'Path' (saccade flow) modes"
+            >
+              {visualizationMode === 'path' ? (
+                <>
+                  <Route className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Mode: Path</span>
+                </>
+              ) : (
+                <>
+                  <Flame className="w-3.5 h-3.5 text-amber-400 fill-current" />
+                  <span>Mode: Intensity</span>
+                </>
+              )}
+            </button>
+          )}
+
           <button
             onClick={() => resetSession()}
             className="px-3.5 py-2 rounded-xl bg-[#151518] hover:bg-[#1a1a1f] border border-white/[0.08] text-xs text-[#a1a1aa] hover:text-[#f4f4f5] transition-colors cursor-pointer flex items-center gap-1.5"
@@ -158,6 +229,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ onSelectProduct, onExp
             <ProductCard
               key={product.id}
               product={product}
+              showHeatmap={isHeatmapActive}
+              heatmapMode={visualizationMode}
               onSelect={onSelectProduct}
               onExplain={onExplainProduct}
             />

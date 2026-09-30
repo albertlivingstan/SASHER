@@ -11,21 +11,31 @@ import {
   Eye, 
   X, 
   ThumbsUp,
-  Sparkle
+  Sparkle,
+  Flame,
+  AlertTriangle,
+  Route
 } from 'lucide-react';
+import { gazeHeatmapService, ProductGazeHeatmapData } from '../../services/gazeHeatmapService';
 
 interface ProductCardProps {
   product: RecommendedProduct;
   onSelect: (product: RecommendedProduct) => void;
   onExplain?: (product: RecommendedProduct) => void;
   onShowSimilar?: (product: RecommendedProduct) => void;
+  showHeatmap?: boolean;
+  heatmapMode?: 'intensity' | 'path';
+  onInspectHeatmap?: (data: ProductGazeHeatmapData) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ 
   product, 
   onSelect, 
   onExplain,
-  onShowSimilar 
+  onShowSimilar,
+  showHeatmap = false,
+  heatmapMode = 'intensity',
+  onInspectHeatmap
 }) => {
   const { 
     wishlistIds, 
@@ -54,6 +64,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const discountPercent = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
+
+  // Merchandiser Gaze Heatmap data
+  const heatmapData: ProductGazeHeatmapData | null = React.useMemo(() => {
+    if (!showHeatmap) return null;
+    return gazeHeatmapService.getHeatmapForProduct(product.id);
+  }, [showHeatmap, product.id]);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -198,6 +214,173 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <div className="w-12 h-12 rounded-full border border-[#d4a373]/60 animate-ping" />
             <div className="absolute w-2 h-2 rounded-full bg-[#d4a373]" />
           </div>
+        )}
+
+        {/* Merchandiser Gaze Heatmap Overlay Layer */}
+        {showHeatmap && heatmapData && (
+          <>
+            {heatmapMode === 'intensity' ? (
+              <>
+                {/* Chromatic Heat Gradient Hotspots */}
+                <div className="absolute inset-0 pointer-events-none z-15 overflow-hidden mix-blend-screen opacity-90 transition-opacity">
+                  {heatmapData.hotspots.map((hs, i) => {
+                    const isStar = heatmapData.classification === 'STAR_PERFORMER';
+                    const isFriction = heatmapData.classification === 'HIGH_INTEREST_FRICTION';
+                    const isSkimmed = heatmapData.classification === 'SKIMMED_FATIGUE';
+                    
+                    let gradient = `radial-gradient(circle, rgba(16,185,129,${0.55 * hs.weight}) 0%, rgba(16,185,129,${0.25 * hs.weight}) 40%, transparent 75%)`;
+                    if (isStar) {
+                      gradient = `radial-gradient(circle, rgba(239,68,68,${0.70 * hs.weight}) 0%, rgba(245,158,11,${0.50 * hs.weight}) 45%, transparent 80%)`;
+                    } else if (isFriction) {
+                      gradient = `radial-gradient(circle, rgba(245,158,11,${0.75 * hs.weight}) 0%, rgba(234,88,12,${0.45 * hs.weight}) 50%, transparent 80%)`;
+                    } else if (isSkimmed) {
+                      gradient = `radial-gradient(circle, rgba(56,189,248,${0.40 * hs.weight}) 0%, transparent 70%)`;
+                    }
+
+                    return (
+                      <div
+                        key={i}
+                        className="absolute rounded-full transform -translate-x-1/2 -translate-y-1/2 filter blur-md pointer-events-none"
+                        style={{
+                          left: `${hs.xPercent}%`,
+                          top: `${hs.yPercent}%`,
+                          width: `${hs.radiusPx * 1.75}px`,
+                          height: `${hs.radiusPx * 1.75}px`,
+                          background: gradient
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Merchandiser Dwell & Classification Badge */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onInspectHeatmap) onInspectHeatmap(heatmapData);
+                  }}
+                  title="Click to view Merchandiser Attention Diagnostics & Action Plan"
+                  className={`absolute bottom-3 left-3 z-25 px-2.5 py-1 rounded-lg backdrop-blur-md border text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-xl transition-transform hover:scale-105 cursor-pointer ${
+                    heatmapData.classification === 'STAR_PERFORMER' 
+                      ? 'bg-rose-950/85 border-rose-500/60 text-rose-300' 
+                      : heatmapData.classification === 'HIGH_INTEREST_FRICTION'
+                      ? 'bg-amber-950/85 border-amber-500/60 text-amber-300'
+                      : heatmapData.classification === 'SKIMMED_FATIGUE'
+                      ? 'bg-slate-900/85 border-sky-500/40 text-sky-300'
+                      : 'bg-emerald-950/85 border-emerald-500/50 text-emerald-300'
+                  }`}
+                >
+                  <Flame className="w-3 h-3 fill-current shrink-0" />
+                  <span>{heatmapData.dwellTimeSeconds}s dwell</span>
+                  <span className="opacity-60">·</span>
+                  <span>{heatmapData.badgeLabel}</span>
+                </button>
+              </>
+            ) : (
+              /* Saccade Flow / Path Visualization Mode */
+              <>
+                <div className="absolute inset-0 pointer-events-none z-15 overflow-hidden">
+                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id={`saccade-grad-${product.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.9" />
+                        <stop offset="50%" stopColor="#6366f1" stopOpacity="0.95" />
+                        <stop offset="100%" stopColor="#ec4899" stopOpacity="0.95" />
+                      </linearGradient>
+                      <marker
+                        id={`saccade-arrow-${product.id}`}
+                        viewBox="0 0 10 10"
+                        refX="6"
+                        refY="5"
+                        markerWidth="4"
+                        markerHeight="4"
+                        orient="auto"
+                      >
+                        <path d="M 0 2 L 7 5 L 0 8 z" fill="#06b6d4" />
+                      </marker>
+                    </defs>
+
+                    {/* Saccadic Trajectory Connecting Lines */}
+                    {heatmapData.saccadeFlow?.nodes.slice(0, -1).map((node, i) => {
+                      const next = heatmapData.saccadeFlow.nodes[i + 1];
+                      return (
+                        <line
+                          key={`saccade-line-${i}`}
+                          x1={`${node.xPercent}%`}
+                          y1={`${node.yPercent}%`}
+                          x2={`${next.xPercent}%`}
+                          y2={`${next.yPercent}%`}
+                          stroke={`url(#saccade-grad-${product.id})`}
+                          strokeWidth="1.8"
+                          strokeDasharray="3 2"
+                          markerEnd={`url(#saccade-arrow-${product.id})`}
+                          className="opacity-90"
+                        />
+                      );
+                    })}
+
+                    {/* Numbered Fixation Sequence Circles */}
+                    {heatmapData.saccadeFlow?.nodes.map((node) => {
+                      const isFirst = node.order === 1;
+                      const isLast = node.order === heatmapData.saccadeFlow.nodes.length;
+                      return (
+                        <g key={`saccade-node-${node.order}`}>
+                          {/* Outer Pulsing Halo */}
+                          <circle
+                            cx={`${node.xPercent}%`}
+                            cy={`${node.yPercent}%`}
+                            r="4.2"
+                            fill="none"
+                            stroke={isFirst ? '#06b6d4' : isLast ? '#ec4899' : '#6366f1'}
+                            strokeWidth="0.8"
+                            strokeDasharray="2 2"
+                            className="opacity-80 animate-pulse"
+                          />
+                          {/* Inner Fixation Circle */}
+                          <circle
+                            cx={`${node.xPercent}%`}
+                            cy={`${node.yPercent}%`}
+                            r="3.2"
+                            fill={isFirst ? '#06b6d4' : isLast ? '#ec4899' : '#1e1b4b'}
+                            stroke="#ffffff"
+                            strokeWidth="0.8"
+                          />
+                          {/* Sequence Number */}
+                          <text
+                            x={`${node.xPercent}%`}
+                            y={`${node.yPercent}%`}
+                            dy="1.1"
+                            textAnchor="middle"
+                            fill={isFirst ? '#09090b' : '#ffffff'}
+                            fontSize="2.6"
+                            fontWeight="bold"
+                            fontFamily="monospace"
+                          >
+                            {node.order}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
+
+                {/* Saccade Flow Merchandiser Badge */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onInspectHeatmap) onInspectHeatmap(heatmapData);
+                  }}
+                  title="Click to view Saccade Flow & Fixation Sequence"
+                  className="absolute bottom-3 left-3 z-25 px-2.5 py-1 rounded-lg backdrop-blur-md border border-cyan-500/40 bg-slate-950/85 text-cyan-300 text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-xl transition-transform hover:scale-105 cursor-pointer"
+                >
+                  <Route className="w-3 h-3 text-cyan-400 shrink-0" />
+                  <span>Scanpath: {heatmapData.saccadeFlow?.nodes.length || 4} Fixations</span>
+                  <span className="opacity-60">·</span>
+                  <span>{heatmapData.saccadeFlow?.scanpathLengthPx || 380}px</span>
+                </button>
+              </>
+            )}
+          </>
         )}
       </div>
 

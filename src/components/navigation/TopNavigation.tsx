@@ -46,7 +46,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
     genderFilter,
     setGenderFilter,
     searchQuery,
-    setSearchQuery
+    setSearchQuery,
+    setActiveCategory
   } = useSasher();
   const { user, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -55,10 +56,43 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   const navLinks = [
-    { label: 'Home', action: () => { setGenderFilter('All'); onSelectTab('discover'); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
-    { label: 'Browse', action: () => { setGenderFilter('All'); onSelectTab('browse'); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
-    { label: 'Women', action: () => { setGenderFilter('Women'); onSelectTab('browse'); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
-    { label: 'Men', action: () => { setGenderFilter('Men'); onSelectTab('browse'); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
+    { 
+      label: 'Home', 
+      action: () => { 
+        setGenderFilter('All'); 
+        setActiveCategory('All');
+        onSelectTab('discover'); 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+      } 
+    },
+    { 
+      label: 'Browse', 
+      action: () => { 
+        setGenderFilter('All'); 
+        setActiveCategory('All');
+        setSearchQuery('');
+        onSelectTab('browse'); 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+      } 
+    },
+    { 
+      label: 'Women', 
+      action: () => { 
+        setGenderFilter('Women'); 
+        setActiveCategory('All');
+        onSelectTab('browse'); 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+      } 
+    },
+    { 
+      label: 'Men', 
+      action: () => { 
+        setGenderFilter('Men'); 
+        setActiveCategory('All');
+        onSelectTab('browse'); 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+      } 
+    },
     { label: 'Collections', action: () => { onSelectTab('shopping'); } },
     { label: 'Research', action: () => { onSelectTab('research'); } }
   ];

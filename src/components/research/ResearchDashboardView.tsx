@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSasher } from '../../context/SasherContext';
 import { 
   RESEARCH_METRICS, 
   MODEL_COMPARISONS, 
@@ -8,6 +9,7 @@ import { TelemetryTrendChart } from './TelemetryTrendChart';
 import { ProductDeepResearchSection } from './ProductDeepResearchSection';
 import { ModelComparisonGraphicalChart } from './ModelComparisonGraphicalChart';
 import { HybridWeightsTuningSection } from './HybridWeightsTuningSection';
+import { GazeHeatmapOverlay } from '../eyetracking/GazeHeatmapOverlay';
 import { 
   BarChart3, 
   Layers, 
@@ -20,11 +22,15 @@ import {
   Activity,
   TrendingUp,
   Cpu,
-  Sliders
+  Sliders,
+  Flame
 } from 'lucide-react';
 
 export const ResearchDashboardView: React.FC = () => {
+  const { products } = useSasher();
   const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
+  const [isHeatmapOverlayActive, setIsHeatmapOverlayActive] = useState(true);
+  const [heatmapFilter, setHeatmapFilter] = useState('ALL');
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -98,6 +104,13 @@ export const ResearchDashboardView: React.FC = () => {
           className="px-3 py-1.5 rounded-lg bg-[#18191d] hover:bg-[#27272a] text-[#a1a1aa] hover:text-[#f4f4f5] transition-colors"
         >
           Model Comparisons
+        </button>
+        <button
+          onClick={() => scrollToSection('section-gaze-heatmap')}
+          className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-[#d4a373] border border-amber-500/30 transition-colors flex items-center gap-1.5 font-medium"
+        >
+          <Flame className="w-3 h-3 text-[#d4a373]" />
+          <span>Gaze Heatmap Overlay</span>
         </button>
         <button
           onClick={() => scrollToSection('section-ablation')}
@@ -190,6 +203,29 @@ export const ResearchDashboardView: React.FC = () => {
       {/* Model Comparison Across Algorithms Section (Graphical) */}
       <div id="section-benchmarks" className="scroll-mt-24">
         <ModelComparisonGraphicalChart />
+      </div>
+
+      {/* MERCHANDISER GAZE HEATMAP OVERLAY ANALYTICS SECTION */}
+      <div id="section-gaze-heatmap" className="space-y-4 scroll-mt-24">
+        <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-mono uppercase text-[#d4a373]">
+              <Flame className="w-3.5 h-3.5" />
+              <span>EYE-TRACKING ATTENTION HEATMAP SUITE</span>
+            </div>
+            <h3 className="font-editorial text-2xl text-[#f4f4f5] mt-0.5">
+              Merchandiser Dwell-Time & Cognitive Fixation Overlay
+            </h3>
+          </div>
+        </div>
+
+        <GazeHeatmapOverlay
+          products={products}
+          isHeatmapActive={isHeatmapOverlayActive}
+          onToggleHeatmap={(active) => setIsHeatmapOverlayActive(active)}
+          selectedClassificationFilter={heatmapFilter}
+          onClassificationFilterChange={(f) => setHeatmapFilter(f)}
+        />
       </div>
 
       {/* Ablation Study Section (Rule 18) */}

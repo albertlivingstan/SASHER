@@ -613,13 +613,255 @@ const CURATED_PRODUCTS: Product[] = [
       warmth: 0.65
     },
     collaborativeScore: 0.91
+  },
+  {
+    id: 'prod-in-01',
+    product_id: 'prod-in-01',
+    name: 'Heritage Banarasi Katan Silk Saree',
+    brand: 'VARANASI ATELIER',
+    category: 'Dresses',
+    subcategory: 'Traditional Sarees',
+    articleType: 'Banarasi Saree',
+    price: 38500,
+    originalPrice: 45000,
+    currency: '₹',
+    imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
+    imageFallbackGradient: 'linear-gradient(145deg, #78350f, #991b1b)',
+    gender: 'Women',
+    color: 'Crimson Vermilion & Antique Zari',
+    season: 'Festive',
+    style: 'Traditional',
+    occasion: 'Wedding',
+    description: 'Master handwoven Pure Katan Silk Saree from Varanasi artisans featuring intricate floral jaal weaving, Kadwa antique gold zari border, and opulent pallu craftsmanship.',
+    material: '100% Pure Mulberry Katan Silk & Real Gold Zari',
+    fit: 'Fluid Regal Drape (5.5m + Unstitched Blouse)',
+    rating: 4.95,
+    reviewCount: 38,
+    stock: 7,
+    availableSizes: ['Free Size'],
+    attributes: {
+      weaving: 'Handloom Kadwa Technique',
+      craftOrigin: 'Varanasi, Uttar Pradesh',
+      silkMark: 'Certified 100% Silk Mark'
+    },
+    popularityScore: 0.97,
+    featureVector: {
+      outerwear: 0.10,
+      tailoring: 0.40,
+      knitwear: 0.05,
+      minimalism: 0.15,
+      formal: 0.95,
+      casual: 0.05,
+      warmth: 0.35,
+      traditional: 0.98
+    },
+    tags: ['Saree', 'Banarasi', 'Silk', 'Festive', 'Wedding', 'Zari', 'Handloom'],
+    collaborativeScore: 0.96
+  },
+  {
+    id: 'prod-in-02',
+    product_id: 'prod-in-02',
+    name: 'Artisan Chikankari Embroidered Kurta',
+    brand: 'AVADH ATELIER',
+    category: 'Tops',
+    subcategory: 'Kurta & Tunics',
+    articleType: 'Chikankari Kurta',
+    price: 14900,
+    originalPrice: 17500,
+    currency: '₹',
+    imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
+    imageFallbackGradient: 'linear-gradient(145deg, #18181b, #3f3f46)',
+    gender: 'Unisex',
+    color: 'Pristine Ivory Ecru',
+    season: 'All-Season',
+    style: 'Traditional',
+    occasion: 'Festive',
+    description: 'Handcrafted in Lucknow using 32 heirloom needlework stitches including Bakhiya, Phanda, and Murri on hand-spun organic cotton mulmul with mother-of-pearl buttons.',
+    material: '100% Handloom Organic Cotton Mulmul',
+    fit: 'Relaxed Tailored Silhouette',
+    rating: 4.88,
+    reviewCount: 29,
+    stock: 15,
+    availableSizes: ['S', 'M', 'L', 'XL'],
+    attributes: {
+      embroidery: 'Handmade Lucknow Chikankari',
+      buttons: 'Natural Mother-of-Pearl',
+      washCare: 'Dry Clean Recommended'
+    },
+    popularityScore: 0.93,
+    featureVector: {
+      outerwear: 0.05,
+      tailoring: 0.70,
+      knitwear: 0.10,
+      minimalism: 0.65,
+      formal: 0.80,
+      casual: 0.60,
+      warmth: 0.20,
+      traditional: 0.92
+    },
+    tags: ['Kurta', 'Chikankari', 'Handloom', 'Festive', 'Lucknow', 'Cotton'],
+    collaborativeScore: 0.92
+  },
+  {
+    id: 'prod-in-03',
+    product_id: 'prod-in-03',
+    name: 'Royal Silk Brocade Achkan Sherwani',
+    brand: 'ATELIER RAJPUTANA',
+    category: 'Outerwear',
+    subcategory: 'Royal Tailoring',
+    articleType: 'Sherwani',
+    price: 52000,
+    originalPrice: 62000,
+    currency: '₹',
+    imageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
+    imageFallbackGradient: 'linear-gradient(145deg, #451a03, #1c1917)',
+    gender: 'Men',
+    color: 'Deep Midnight Navy & Champagne Gold',
+    season: 'Festive',
+    style: 'Traditional',
+    occasion: 'Wedding',
+    description: 'Sculpted structured achkan sherwani crafted from pure Varanasi brocade with handcrafted bullion wire zardozi collar, vented imperial hem, and silk-covered buttons.',
+    material: 'Pure Silk Brocade with Cupro Lining',
+    fit: 'Structured Imperial Fit',
+    rating: 4.98,
+    reviewCount: 22,
+    stock: 4,
+    availableSizes: ['38', '40', '42', '44'],
+    attributes: {
+      craft: 'Zardozi Wire Embroidery',
+      lining: 'Breathable Japanese Cupro',
+      occasion: 'Royal Wedding & Sangeet'
+    },
+    popularityScore: 0.96,
+    featureVector: {
+      outerwear: 0.90,
+      tailoring: 0.95,
+      knitwear: 0.00,
+      minimalism: 0.20,
+      formal: 0.98,
+      casual: 0.00,
+      warmth: 0.60,
+      traditional: 0.99
+    },
+    tags: ['Sherwani', 'Brocade', 'Wedding', 'Festive', 'Royal', 'Tailoring'],
+    collaborativeScore: 0.95
+  },
+  {
+    id: 'prod-in-04',
+    product_id: 'prod-in-04',
+    name: 'Hand-Dyed Bandhani Georgette Ensemble',
+    brand: 'GUJARAT ATELIER',
+    category: 'Dresses',
+    subcategory: 'Festive Ensembles',
+    articleType: 'Bandhani Anarkali',
+    price: 29500,
+    originalPrice: 34000,
+    currency: '₹',
+    imageUrl: 'https://images.unsplash.com/photo-1583391733975-021b36e8e8ce?auto=format&fit=crop&w=800&q=80',
+    imageFallbackGradient: 'linear-gradient(145deg, #831843, #500724)',
+    gender: 'Women',
+    color: 'Rani Pink & Burnt Saffron',
+    season: 'Festive',
+    style: 'Festive',
+    occasion: 'Festive',
+    description: 'Heirloom tie-dye Bandhani crafted on fluid pure silk georgette with delicate gota patti mirror-work accents on yoke, full kalidar flair, and hand-pleated churidar pants.',
+    material: 'Pure Silk Georgette & Gota Patti',
+    fit: 'Flared Kalidar Anarkali Silhouette',
+    rating: 4.89,
+    reviewCount: 31,
+    stock: 8,
+    availableSizes: ['S', 'M', 'L', 'XL'],
+    attributes: {
+      technique: 'Traditional Kutch Bandhani',
+      embellishment: 'Handmade Gota Patti'
+    },
+    popularityScore: 0.94,
+    featureVector: {
+      outerwear: 0.10,
+      tailoring: 0.50,
+      knitwear: 0.05,
+      minimalism: 0.10,
+      formal: 0.88,
+      casual: 0.20,
+      warmth: 0.25,
+      traditional: 0.95
+    },
+    tags: ['Bandhani', 'Anarkali', 'Festive', 'Saree', 'Pink', 'Silk'],
+    collaborativeScore: 0.94
+  },
+  {
+    id: 'prod-in-05',
+    product_id: 'prod-in-05',
+    name: 'Handwoven Tussar Silk Nehru Bandhgala',
+    brand: 'STUDIO SASHER',
+    category: 'Tailoring',
+    subcategory: 'Indo-Western Jackets',
+    articleType: 'Nehru Jacket',
+    price: 18500,
+    originalPrice: 22000,
+    currency: '₹',
+    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80',
+    imageFallbackGradient: 'linear-gradient(145deg, #27272a, #18181b)',
+    gender: 'Men',
+    color: 'Raw Tussar Gold & Charcoal Slub',
+    season: 'All-Season',
+    style: 'Tailored',
+    occasion: 'Formal',
+    description: 'Contemporary tailored Nehru waistcoat vest cut from wild organic Tussar silk slub. Mandarin collar with piped button placket and horn buttons, bridging heritage and modern luxury.',
+    material: '100% Wild Organic Tussar Silk',
+    fit: 'Structured Tailored Waistcoat',
+    rating: 4.91,
+    reviewCount: 19,
+    stock: 10,
+    availableSizes: ['38', '40', '42', '44'],
+    attributes: {
+      collar: 'Mandarin Bandhgala Collar',
+      craft: 'Handspun Bhagalpur Tussar Silk'
+    },
+    popularityScore: 0.92,
+    featureVector: {
+      outerwear: 0.40,
+      tailoring: 0.92,
+      knitwear: 0.00,
+      minimalism: 0.70,
+      formal: 0.90,
+      casual: 0.40,
+      warmth: 0.40,
+      traditional: 0.85
+    },
+    tags: ['Nehru Jacket', 'Bandhgala', 'Tussar Silk', 'Formal', 'Festive', 'Tailoring'],
+    collaborativeScore: 0.91
   }
 ];
+
+export function inferProductOccasion(p: Partial<Product>): NonNullable<Product['occasion']> {
+  if (p.occasion) return p.occasion;
+  const text = `${p.name || ''} ${p.category || ''} ${p.subcategory || ''} ${p.articleType || ''} ${p.description || ''} ${p.style || ''} ${p.season || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
+  
+  if (/wedding|sangeet|sherwani|bridal|lehenga|brocade|zari|royal/i.test(text)) {
+    return 'Wedding';
+  }
+  if (/festive|diwali|puja|saree|kurta|bandhani|chikankari|handloom|silk|ethnic|traditional/i.test(text)) {
+    return 'Festive';
+  }
+  if (/tailor|blazer|suit|trench|formal|oxford|dress shoe|watch|trouser|structured wool/i.test(text)) {
+    return 'Formal';
+  }
+  if (/evening|cocktail|gown|black dress|party/i.test(text)) {
+    return 'Evening';
+  }
+  return 'Casual';
+}
 
 export const INITIAL_PRODUCTS: Product[] = [
   ...CURATED_PRODUCTS,
   ...DUMMY_JSON_FASHION_PRODUCTS
-];
+].map(prod => ({
+  ...prod,
+  occasion: prod.occasion || inferProductOccasion(prod),
+  availableSizes: prod.availableSizes && prod.availableSizes.length > 0 ? prod.availableSizes : ['S', 'M', 'L', 'XL'],
+  tags: prod.tags || [prod.category, prod.style, prod.brand, prod.color]
+}));
 
 export const CATEGORIES: readonly CategoryType[] = [
   'All',
@@ -656,6 +898,7 @@ export function adaptProductData(raw: Partial<Product> & { product_id?: string; 
     color: raw.color || 'Monochrome',
     season: raw.season || 'All-Season',
     style: raw.style || 'Minimalist',
+    occasion: raw.occasion || inferProductOccasion(raw),
     description: raw.description || 'Description not available.',
     material: raw.material || 'Material specification not available.',
     fit: raw.fit || 'Regular Fit',
