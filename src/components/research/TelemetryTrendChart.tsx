@@ -11,8 +11,13 @@ import {
   Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { HOURLY_TELEMETRY_24H, HourlyTelemetryPoint } from '../../data/research';
-import { Activity, Clock, Zap, ArrowUpRight, Cpu, Layers } from 'lucide-react';
+import { 
+  HOURLY_TELEMETRY_24H, 
+  HOURLY_TELEMETRY_FLASH_SALE, 
+  HOURLY_TELEMETRY_MIDNIGHT_DROP, 
+  HourlyTelemetryPoint 
+} from '../../data/research';
+import { Activity, Clock, Zap, ArrowUpRight, Cpu, Layers, TrendingUp } from 'lucide-react';
 
 // Register Chart.js modules
 ChartJS.register(
@@ -27,23 +32,37 @@ ChartJS.register(
 );
 
 type ChartMode = 'dual' | 'latency' | 'volume';
+type TrafficProfile = 'standard' | 'flash_sale' | 'midnight_drop';
 
 export const TelemetryTrendChart: React.FC = () => {
   const [chartMode, setChartMode] = useState<ChartMode>('dual');
+  const [trafficProfile, setTrafficProfile] = useState<TrafficProfile>('standard');
   const [hoveredPoint, setHoveredPoint] = useState<HourlyTelemetryPoint | null>(null);
 
-  // Compute 24h summary statistics
+  // Active telemetry data set according to real-world traffic profile selection
+  const activeTelemetry = useMemo(() => {
+    switch (trafficProfile) {
+      case 'flash_sale':
+        return HOURLY_TELEMETRY_FLASH_SALE;
+      case 'midnight_drop':
+        return HOURLY_TELEMETRY_MIDNIGHT_DROP;
+      default:
+        return HOURLY_TELEMETRY_24H;
+    }
+  }, [trafficProfile]);
+
+  // Compute 24h summary statistics based on active telemetry
   const stats = useMemo(() => {
-    const totalVolume = HOURLY_TELEMETRY_24H.reduce((acc, curr) => acc + curr.recommendationVolume, 0);
+    const totalVolume = activeTelemetry.reduce((acc, curr) => acc + curr.recommendationVolume, 0);
     const avgLatency = (
-      HOURLY_TELEMETRY_24H.reduce((acc, curr) => acc + curr.latencyMs, 0) / HOURLY_TELEMETRY_24H.length
+      activeTelemetry.reduce((acc, curr) => acc + curr.latencyMs, 0) / activeTelemetry.length
     ).toFixed(1);
     const avgP99 = (
-      HOURLY_TELEMETRY_24H.reduce((acc, curr) => acc + curr.p99LatencyMs, 0) / HOURLY_TELEMETRY_24H.length
+      activeTelemetry.reduce((acc, curr) => acc + curr.p99LatencyMs, 0) / activeTelemetry.length
     ).toFixed(1);
-    const peakVolumePoint = [...HOURLY_TELEMETRY_24H].sort((a, b) => b.recommendationVolume - a.recommendationVolume)[0];
+    const peakVolumePoint = [...activeTelemetry].sort((a, b) => b.recommendationVolume - a.recommendationVolume)[0];
     const avgCache = (
-      HOURLY_TELEMETRY_24H.reduce((acc, curr) => acc + curr.cacheHitRatio, 0) / HOURLY_TELEMETRY_24H.length
+      activeTelemetry.reduce((acc, curr) => acc + curr.cacheHitRatio, 0) / activeTelemetry.length
     ).toFixed(1);
 
     return {
@@ -54,9 +73,9 @@ export const TelemetryTrendChart: React.FC = () => {
       peakVolume: peakVolumePoint.recommendationVolume,
       avgCache
     };
-  }, []);
+  }, [activeTelemetry]);
 
-  const labels = HOURLY_TELEMETRY_24H.map(item => item.hour);
+  const labels = activeTelemetry.map(item => item.hour);
 
   // Chart datasets configuration with muted warm accents matching the editorial theme
   const chartData = useMemo(() => {
@@ -66,7 +85,7 @@ export const TelemetryTrendChart: React.FC = () => {
         datasets: [
           {
             label: 'P99 Latency (ms)',
-            data: HOURLY_TELEMETRY_24H.map(d => d.p99LatencyMs),
+            data: activeTelemetry.map(d => d.p99LatencyMs),
             borderColor: '#e07a5f', // Muted terracotta
             backgroundColor: 'rgba(224, 122, 95, 0.08)',
             borderWidth: 2,
@@ -81,7 +100,7 @@ export const TelemetryTrendChart: React.FC = () => {
           },
           {
             label: 'Mean Latency (ms)',
-            data: HOURLY_TELEMETRY_24H.map(d => d.latencyMs),
+            data: activeTelemetry.map(d => d.latencyMs),
             borderColor: '#e2a876', // Primary warm amber gold
             backgroundColor: 'rgba(226, 168, 118, 0.15)',
             borderWidth: 2.5,
@@ -103,7 +122,7 @@ export const TelemetryTrendChart: React.FC = () => {
         datasets: [
           {
             label: 'Recommendation Volume (req/hr)',
-            data: HOURLY_TELEMETRY_24H.map(d => d.recommendationVolume),
+            data: activeTelemetry.map(d => d.recommendationVolume),
             borderColor: '#e2a876',
             backgroundColor: 'rgba(226, 168, 118, 0.14)',
             borderWidth: 2.5,
@@ -125,7 +144,7 @@ export const TelemetryTrendChart: React.FC = () => {
       datasets: [
         {
           label: 'Recommendation Volume (req/hr)',
-          data: HOURLY_TELEMETRY_24H.map(d => d.recommendationVolume),
+          data: activeTelemetry.map(d => d.recommendationVolume),
           borderColor: '#e2a876', // Muted warm amber gold
           backgroundColor: 'rgba(226, 168, 118, 0.12)',
           borderWidth: 2.5,
@@ -140,7 +159,7 @@ export const TelemetryTrendChart: React.FC = () => {
         },
         {
           label: 'Model Latency (ms)',
-          data: HOURLY_TELEMETRY_24H.map(d => d.latencyMs),
+          data: activeTelemetry.map(d => d.latencyMs),
           borderColor: '#e07a5f', // Muted warm terracotta
           backgroundColor: 'rgba(224, 122, 95, 0.06)',
           borderWidth: 2.2,
@@ -151,183 +170,149 @@ export const TelemetryTrendChart: React.FC = () => {
           pointBackgroundColor: '#e07a5f',
           pointBorderColor: '#121316',
           pointBorderWidth: 1.5,
-          yAxisID: 'y'
+          yAxisID: 'y2'
         }
       ]
     };
-  }, [chartMode, labels]);
+  }, [activeTelemetry, chartMode, labels]);
 
-  // Chart.js Options configured for ultra-refined dark luxury theme with muted warm accents
+  // Chart configuration options with dynamic scale generation to prevent Chart.js validation errors
   const chartOptions = useMemo(() => {
+    const scalesConfig: Record<string, any> = {
+      x: {
+        grid: {
+          color: 'rgba(39, 39, 42, 0.3)',
+          drawBorder: false
+        },
+        ticks: {
+          color: '#71717a',
+          font: {
+            family: 'JetBrains Mono, monospace',
+            size: 10
+          },
+          maxRotation: 0,
+          autoSkip: true,
+          skipTicks: 3
+        }
+      }
+    };
+
+    if (chartMode === 'latency' || chartMode === 'volume') {
+      scalesConfig.y = {
+        type: 'linear' as const,
+        display: true,
+        position: 'left' as const,
+        grid: {
+          color: 'rgba(39, 39, 42, 0.4)',
+          drawBorder: false
+        },
+        ticks: {
+          color: '#71717a',
+          font: {
+            family: 'JetBrains Mono, monospace',
+            size: 10
+          },
+          callback: (val: any) => chartMode === 'volume' ? `${val / 1000}k` : `${val}ms`
+        }
+      };
+    } else {
+      scalesConfig.y1 = {
+        type: 'linear' as const,
+        display: true,
+        position: 'right' as const,
+        grid: {
+          drawOnChartArea: false,
+        },
+        ticks: {
+          color: '#e2a876',
+          font: {
+            family: 'JetBrains Mono, monospace',
+            size: 10
+          },
+          callback: (val: any) => `${val / 1000}k`
+        },
+        title: {
+          display: true,
+          text: 'Volume (req/hr)',
+          color: '#e2a876',
+          font: {
+            family: 'JetBrains Mono, monospace',
+            size: 10
+          }
+        }
+      };
+      scalesConfig.y2 = {
+        type: 'linear' as const,
+        display: true,
+        position: 'left' as const,
+        grid: {
+          color: 'rgba(39, 39, 42, 0.3)',
+          drawBorder: false
+        },
+        ticks: {
+          color: '#e07a5f',
+          font: {
+            family: 'JetBrains Mono, monospace',
+            size: 10
+          },
+          callback: (val: any) => `${val}ms`
+        },
+        title: {
+          display: true,
+          text: 'Latency (ms)',
+          color: '#e07a5f',
+          font: {
+            family: 'JetBrains Mono, monospace',
+            size: 10
+          }
+        }
+      };
+    }
+
     return {
       responsive: true,
       maintainAspectRatio: false,
       interaction: {
         mode: 'index' as const,
-        intersect: false
-      },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onHover: (_event: any, elements: any[]) => {
-        if (elements && elements.length > 0) {
-          const idx = elements[0].index;
-          if (HOURLY_TELEMETRY_24H[idx]) {
-            setHoveredPoint(HOURLY_TELEMETRY_24H[idx]);
-          }
-        }
+        intersect: false,
       },
       plugins: {
         legend: {
-          display: true,
-          position: 'top' as const,
-          align: 'end' as const,
-          labels: {
-            boxWidth: 12,
-            boxHeight: 3,
-            usePointStyle: true,
-            pointStyle: 'rectRounded',
-            color: '#a1a1aa',
-            font: {
-              family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-              size: 11
-            },
-            padding: 18
-          }
+          display: false
         },
         tooltip: {
-          backgroundColor: 'rgba(18, 19, 22, 0.94)',
+          enabled: true,
+          backgroundColor: '#0c0d0e',
           titleColor: '#f4f4f5',
-          bodyColor: '#e4e4e7',
-          borderColor: '#3f3f46',
+          bodyColor: '#a1a1aa',
+          borderColor: '#27272a',
           borderWidth: 1,
           padding: 12,
           boxPadding: 6,
           usePointStyle: true,
-          titleFont: {
-            family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            size: 12,
-            weight: 600 as const
-          },
-          bodyFont: {
-            family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            size: 11
-          },
           callbacks: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            label: function (context: any) {
-              const label = context.dataset.label || '';
+            title: (context: any) => `Time Window: ${context[0].label} UTC`,
+            label: (context: any) => {
+              const datasetLabel = context.dataset.label || '';
               const value = context.parsed.y;
-              if (label.includes('Latency')) {
-                return ` ${label}: ${value.toFixed(1)} ms`;
+              if (datasetLabel.includes('Latency')) {
+                return `${datasetLabel}: ${value.toFixed(1)} ms`;
               }
-              return ` ${label}: ${value.toLocaleString()} requests`;
-            },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            afterBody: function (contexts: any) {
-              if (contexts.length > 0) {
-                const idx = contexts[0].dataIndex;
-                const point = HOURLY_TELEMETRY_24H[idx];
-                return [
-                  ` Cache Hit Ratio: ${point.cacheHitRatio}%`,
-                  ` Gaze Telemetry Frames: ${point.gazeEventsProcessed.toLocaleString()}`
-                ];
-              }
-              return [];
+              return `${datasetLabel}: ${value.toLocaleString()} req/hr`;
+            }
+          },
+          external: (context: any) => {
+            const tooltipModel = context.tooltip;
+            if (tooltipModel && tooltipModel.dataPoints && tooltipModel.dataPoints.length > 0) {
+              const index = tooltipModel.dataPoints[0].dataIndex;
+              setHoveredPoint(activeTelemetry[index]);
             }
           }
         }
       },
-      scales: {
-        x: {
-          grid: {
-            color: 'rgba(255, 255, 255, 0.03)',
-            tickLength: 8
-          },
-          ticks: {
-            color: '#71717a',
-            font: {
-              family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-              size: 10
-            },
-            maxRotation: 0,
-            autoSkip: true,
-            maxTicksLimit: 12
-          },
-          border: {
-            color: '#27272a'
-          }
-        },
-        y: {
-          type: 'linear' as const,
-          display: true,
-          position: 'left' as const,
-          grid: {
-            color: 'rgba(255, 255, 255, 0.04)'
-          },
-          ticks: {
-            color: '#e07a5f',
-            font: {
-              family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-              size: 10
-            },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            callback: function (value: any) {
-              if (chartMode === 'volume') {
-                return `${Number(value).toLocaleString()} req`;
-              }
-              return `${value} ms`;
-            }
-          },
-          border: {
-            color: '#27272a'
-          },
-          title: {
-            display: chartMode !== 'volume',
-            text: 'Latency (ms)',
-            color: '#e07a5f',
-            font: {
-              family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-              size: 10
-            }
-          }
-        },
-        ...(chartMode === 'dual'
-          ? {
-              y1: {
-                type: 'linear' as const,
-                display: true,
-                position: 'right' as const,
-                grid: {
-                  drawOnChartArea: false // Prevent overlapping grid lines
-                },
-                ticks: {
-                  color: '#e2a876',
-                  font: {
-                    family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    size: 10
-                  },
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  callback: function (value: any) {
-                    return `${(Number(value) / 1000).toFixed(1)}k req`;
-                  }
-                },
-                border: {
-                  color: '#27272a'
-                },
-                title: {
-                  display: true,
-                  text: 'Volume (req/hr)',
-                  color: '#e2a876',
-                  font: {
-                    family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    size: 10
-                  }
-                }
-              }
-            }
-          : {})
-      }
+      scales: scalesConfig
     };
-  }, [chartMode]);
+  }, [activeTelemetry, chartMode]);
 
   return (
     <div className="p-6 bg-[#121316] border border-[#27272a] rounded-2xl space-y-6">
@@ -355,7 +340,6 @@ export const TelemetryTrendChart: React.FC = () => {
         <div className="flex items-center gap-1.5 p-1 bg-[#18191d] rounded-xl border border-[#27272a] self-start lg:self-center">
           <button
             onClick={() => setChartMode('dual')}
-            data-magnetic
             className={`px-3 py-1.5 rounded-lg text-xs font-mono-tabular transition-colors cursor-pointer flex items-center gap-1.5 ${
               chartMode === 'dual'
                 ? 'bg-[#f4f4f5] text-[#09090b] font-semibold shadow-sm'
@@ -368,7 +352,6 @@ export const TelemetryTrendChart: React.FC = () => {
 
           <button
             onClick={() => setChartMode('latency')}
-            data-magnetic
             className={`px-3 py-1.5 rounded-lg text-xs font-mono-tabular transition-colors cursor-pointer flex items-center gap-1.5 ${
               chartMode === 'latency'
                 ? 'bg-[#f4f4f5] text-[#09090b] font-semibold shadow-sm'
@@ -381,7 +364,6 @@ export const TelemetryTrendChart: React.FC = () => {
 
           <button
             onClick={() => setChartMode('volume')}
-            data-magnetic
             className={`px-3 py-1.5 rounded-lg text-xs font-mono-tabular transition-colors cursor-pointer flex items-center gap-1.5 ${
               chartMode === 'volume'
                 ? 'bg-[#f4f4f5] text-[#09090b] font-semibold shadow-sm'
@@ -392,6 +374,44 @@ export const TelemetryTrendChart: React.FC = () => {
             <span>Volume Focus</span>
           </button>
         </div>
+      </div>
+
+      {/* Real-World Traffic Profile Selector */}
+      <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-mono">
+        <span className="text-[#71717a] text-[10px] uppercase tracking-wider flex items-center gap-1">
+          <TrendingUp className="w-3 h-3 text-[#e2a876]" />
+          <span>Real-World Traffic Profile:</span>
+        </span>
+        <button
+          onClick={() => setTrafficProfile('standard')}
+          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+            trafficProfile === 'standard'
+              ? 'bg-[#d4a373]/20 border-[#d4a373] text-[#d4a373] font-semibold shadow-sm'
+              : 'bg-[#18191d] border-[#27272a] text-[#a1a1aa] hover:text-white'
+          }`}
+        >
+          Standard Diurnal Peak (8 PM Prime)
+        </button>
+        <button
+          onClick={() => setTrafficProfile('flash_sale')}
+          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+            trafficProfile === 'flash_sale'
+              ? 'bg-[#d4a373]/20 border-[#d4a373] text-[#d4a373] font-semibold shadow-sm'
+              : 'bg-[#18191d] border-[#27272a] text-[#a1a1aa] hover:text-white'
+          }`}
+        >
+          Weekend Flash Sale Surge
+        </button>
+        <button
+          onClick={() => setTrafficProfile('midnight_drop')}
+          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+            trafficProfile === 'midnight_drop'
+              ? 'bg-[#d4a373]/20 border-[#d4a373] text-[#d4a373] font-semibold shadow-sm'
+              : 'bg-[#18191d] border-[#27272a] text-[#a1a1aa] hover:text-white'
+          }`}
+        >
+          Midnight Festive Collection Drop
+        </button>
       </div>
 
       {/* KPI Stat Ribbon */}
@@ -469,38 +489,38 @@ export const TelemetryTrendChart: React.FC = () => {
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#e2a876] animate-pulse" />
           <span className="text-[#a1a1aa]">
-            {hoveredPoint ? `Inspecting ${hoveredPoint.hour} UTC` : `Latest Synced Window (${HOURLY_TELEMETRY_24H[HOURLY_TELEMETRY_24H.length - 1].hour} UTC)`}
+            {hoveredPoint ? `Inspecting ${hoveredPoint.hour} UTC` : `Latest Synced Window (${activeTelemetry[activeTelemetry.length - 1].hour} UTC)`}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-[11px]">
           <span className="flex items-center gap-1.5">
             <span className="text-[#71717a]">Latency:</span>
             <span className="text-[#e07a5f] font-semibold">
-              {(hoveredPoint || HOURLY_TELEMETRY_24H[HOURLY_TELEMETRY_24H.length - 1]).latencyMs.toFixed(1)} ms
+              {(hoveredPoint || activeTelemetry[activeTelemetry.length - 1]).latencyMs.toFixed(1)} ms
             </span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="text-[#71717a]">P99 Tail:</span>
             <span className="text-[#e07a5f]/80 font-semibold">
-              {(hoveredPoint || HOURLY_TELEMETRY_24H[HOURLY_TELEMETRY_24H.length - 1]).p99LatencyMs.toFixed(1)} ms
+              {(hoveredPoint || activeTelemetry[activeTelemetry.length - 1]).p99LatencyMs.toFixed(1)} ms
             </span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="text-[#71717a]">Volume:</span>
             <span className="text-[#e2a876] font-semibold">
-              {(hoveredPoint || HOURLY_TELEMETRY_24H[HOURLY_TELEMETRY_24H.length - 1]).recommendationVolume.toLocaleString()} req/hr
+              {(hoveredPoint || activeTelemetry[activeTelemetry.length - 1]).recommendationVolume.toLocaleString()} req/hr
             </span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="text-[#71717a]">Cache Hit:</span>
             <span className="text-[#10b981] font-semibold">
-              {(hoveredPoint || HOURLY_TELEMETRY_24H[HOURLY_TELEMETRY_24H.length - 1]).cacheHitRatio}%
+              {(hoveredPoint || activeTelemetry[activeTelemetry.length - 1]).cacheHitRatio}%
             </span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="text-[#71717a]">Gaze Frames:</span>
             <span className="text-[#f4f4f5] font-semibold">
-              {(hoveredPoint || HOURLY_TELEMETRY_24H[HOURLY_TELEMETRY_24H.length - 1]).gazeEventsProcessed.toLocaleString()}
+              {(hoveredPoint || activeTelemetry[activeTelemetry.length - 1]).gazeEventsProcessed.toLocaleString()}
             </span>
           </span>
         </div>
@@ -523,7 +543,7 @@ export const TelemetryTrendChart: React.FC = () => {
             <span className="text-[#e07a5f]">Warm Terracotta: Latency (Left Axis)</span>
           </span>
         </div>
-        <span>Sampling Interval: 60 mins · Engine: PyTorch C++ Runtime</span>
+        <span>Real-World Diurnal Coupling Active · Sampling Interval: 60 mins</span>
       </div>
     </div>
   );

@@ -1,21 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSasher } from '../../context/SasherContext';
-import { X, Sparkles, Check, ChevronDown, ChevronUp, Cpu, ShieldCheck } from 'lucide-react';
+import { X, Sparkles, Check, ChevronDown, ChevronUp, Cpu, ShieldCheck, Tag, ExternalLink } from 'lucide-react';
+import { adaptiveEngine } from '../../services/adaptiveEngine';
 
 export const WhyRecommendedModal: React.FC = () => {
   const { explanationModalProduct, setExplanationModalProduct } = useSasher();
   const [showMath, setShowMath] = useState(false);
 
-  if (!explanationModalProduct) return null;
+  const tailoredReasons = useMemo(() => {
+    if (!explanationModalProduct) return null;
+    return adaptiveEngine.generateExplainableReasons(explanationModalProduct);
+  }, [explanationModalProduct]);
+
+  if (!explanationModalProduct || !tailoredReasons) return null;
 
   const explanation = explanationModalProduct.explanation || {
-    matchScore: 94,
+    matchScore: tailoredReasons.matchScore,
     reason: "Matched via multi-modal gaze trajectory and style vector embedding.",
     keyFactors: ["Gaze Dwell > 1.8s", "Visual Fit Match", "High Demand Cohort"],
-    primaryReasons: [
-      "Matched via multi-modal gaze trajectory and style vector embedding.",
-      "High-density material & superior craftsmanship tailored to your preferences."
-    ],
+    primaryReasons: tailoredReasons.checkmarks,
     sessionContribution: 35,
     visualAttentionContribution: 40,
     profileContribution: 15,
@@ -68,6 +71,12 @@ export const WhyRecommendedModal: React.FC = () => {
           <span className="font-editorial text-4xl text-[#e2a876]">
             {explanation.matchScore}%
           </span>
+        </div>
+
+        {/* Retailer & Pricing Verified Pill */}
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#16171a] border border-white/[0.06] text-xs font-mono">
+          <span className="text-[#a1a1aa]">Catalog Availability:</span>
+          <span className="text-[#d4a373] font-semibold">{tailoredReasons.retailer} · In Stock · ₹{explanationModalProduct.price.toLocaleString('en-IN')}</span>
         </div>
 
         {/* Natural Language Reasons */}

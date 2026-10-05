@@ -27,6 +27,10 @@ import { GAZE_TRACKING_ERROR_AUDIT, correctedGazeEngine } from '../../services/g
 import { projectSuggestionService, SuggestedProject, GazeProductAnalysis } from '../../services/projectSuggestionService';
 import { Product } from '../../types';
 import { LiveEyeTrackerAnalyticsPanel } from './LiveEyeTrackerAnalyticsPanel';
+import { GlobalGazeHeatmapCanvas } from './GlobalGazeHeatmapCanvas';
+import { GazeSessionReplayerModal } from './GazeSessionReplayerModal';
+import { MlBenchmarkingCurvesView } from '../research/MlBenchmarkingCurvesView';
+import { ColorPaletteOutfitCombinator } from '../wardrobe/ColorPaletteOutfitCombinator';
 
 export const GazeTrackingStudioView: React.FC = () => {
   const {
@@ -40,7 +44,9 @@ export const GazeTrackingStudioView: React.FC = () => {
     addToCart
   } = useSasher();
 
-  const [activeTab, setActiveTab] = useState<'live_demo' | 'live_analytics' | 'audit' | 'project_studio'>('live_demo');
+  const [activeTab, setActiveTab] = useState<'live_demo' | 'live_analytics' | 'audit' | 'project_studio' | 'ml_benchmark' | 'color_combinator'>('live_demo');
+  const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
+  const [showReplayer, setShowReplayer] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product>(products[0]);
   const [dwellTime, setDwellTime] = useState<number>(0);
   const [isDwellLocked, setIsDwellLocked] = useState<boolean>(false);
@@ -546,26 +552,50 @@ export const GazeTrackingStudioView: React.FC = () => {
         </div>
 
         {/* Tab switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#18181b] border border-[#27272a] rounded-xl self-start md:self-auto text-xs font-mono">
-          {[
-            { id: 'live_demo', label: 'Live Gaze HUD' },
-            { id: 'live_analytics', label: 'Live Analytics Telemetry' },
-            { id: 'audit', label: 'Error Audit (7 Fixes)' },
-            { id: 'project_studio', label: 'Curated Looks Studio' }
-          ].map((tab) => (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 p-1 bg-[#18181b] border border-[#27272a] rounded-xl text-xs font-mono">
+            {[
+              { id: 'live_demo', label: 'Live Gaze HUD' },
+              { id: 'live_analytics', label: 'Live Analytics' },
+              { id: 'audit', label: 'Error Audit' },
+              { id: 'project_studio', label: 'Capsule Studio' },
+              { id: 'ml_benchmark', label: 'ML Benchmark' },
+              { id: 'color_combinator', label: 'Color Spectrum' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                data-magnetic
+                className={`px-3 py-2 rounded-lg font-medium transition-all cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'bg-[#27272a] text-[#f5f5f7] shadow'
+                    : 'text-[#a1a1a6] hover:text-[#f5f5f7]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              data-magnetic
-              className={`px-3.5 py-2 rounded-lg font-medium transition-all cursor-pointer ${
-                activeTab === tab.id
-                  ? 'bg-[#27272a] text-[#f5f5f7] shadow'
-                  : 'text-[#a1a1a6] hover:text-[#f5f5f7]'
+              onClick={() => setShowHeatmap(!showHeatmap)}
+              className={`px-3 py-2 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                showHeatmap
+                  ? 'bg-red-500/20 text-red-300 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+                  : 'bg-[#18181b] text-[#a1a1a6] border-[#27272a] hover:text-white'
               }`}
             >
-              {tab.label}
+              <span>{showHeatmap ? '🔥 Hide Heatmap' : '🔥 Gaze Heatmap'}</span>
             </button>
-          ))}
+
+            <button
+              onClick={() => setShowReplayer(true)}
+              className="px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5 hover:bg-emerald-500/25 transition-all cursor-pointer"
+            >
+              <span>⏱️ Replayer Studio</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -966,65 +996,26 @@ export const GazeTrackingStudioView: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: CURATED LOOKS STUDIO */}
-      {activeTab === 'project_studio' && (
-        <div className="space-y-6">
-          <div className="p-6 bg-[#121316] border border-[#27272a] rounded-2xl">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#f5f5f7] font-mono">
-              Curated Looks & Capsule Studio
-            </h3>
-            <p className="text-xs text-[#a1a1a6] mt-1.5 leading-relaxed">
-              When a shopper's gaze dwells on any piece for &ge;1.2 seconds, the system dispatches an `EYE_GAZE` interaction event (+3.5× intent multiplier). The styling service assembles multi-piece projects balancing silhouette, material textures, and palette harmony with a 15% complete look discount.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {products.slice(0, 3).map((item) => {
-              const project = projectSuggestionService.generateProjectForProduct(item);
-              return (
-                <div key={item.id} className="bg-[#121316] border border-[#27272a] rounded-xl p-5 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#ff6b1a]/20 text-[#ff6b1a] font-bold">
-                      {project.curationCode}
-                    </span>
-                    <h4 className="text-base font-semibold text-[#f5f5f7] mt-2">
-                      {project.title}
-                    </h4>
-                    <p className="text-xs text-[#a1a1a6] mt-1 line-clamp-2">
-                      {project.conceptNarrative}
-                    </p>
-
-                    <div className="grid grid-cols-3 gap-2 mt-4">
-                      {project.allProducts.slice(0, 3).map((p) => (
-                        <div key={p.id} className="aspect-square rounded-lg overflow-hidden bg-[#18181b]">
-                          <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-[#27272a] mt-4 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] text-[#71717a] block">BUNDLE PRICE</span>
-                      <span className="text-xs font-mono font-bold text-[#f5f5f7]">
-                        {project.currency}{project.projectBundlePrice.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() => addAllProjectItemsToCart(project)}
-                      data-magnetic
-                      className="px-3 py-1.5 bg-[#27272a] hover:bg-[#3f3f46] text-[#f5f5f7] rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Add Look
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* TAB 4: ML BENCHMARK CURVES */}
+      {activeTab === 'ml_benchmark' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <MlBenchmarkingCurvesView />
         </div>
       )}
+
+      {/* TAB 5: COLOR SPECTRUM OUTFIT COMBINATOR */}
+      {activeTab === 'color_combinator' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <ColorPaletteOutfitCombinator onSelectProduct={(prod) => addToCart(prod)} />
+        </div>
+      )}
+
+      {/* Global Gaze Heatmap Overlay Canvas */}
+      <GlobalGazeHeatmapCanvas isVisible={showHeatmap} onClose={() => setShowHeatmap(false)} />
+
+      {/* Gaze Session Replayer Studio Modal */}
+      <GazeSessionReplayerModal isOpen={showReplayer} onClose={() => setShowReplayer(false)} />
+
     </div>
   );
 };

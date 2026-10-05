@@ -125,13 +125,16 @@ export const ResearchDashboardView: React.FC = () => {
         <div className="p-6 bg-[#121316] border border-[#27272a] rounded-2xl text-xs text-[#a1a1aa] space-y-4 animate-in fade-in">
           <div className="flex items-center gap-2 text-[#f4f4f5] font-semibold text-sm">
             <FileText className="w-4 h-4 text-[#e2a876]" />
-            <span>Experimental Setup & Statistical Methodology</span>
+            <span>Experimental Setup & Statistical Methodology (Reproducible Protocol)</span>
           </div>
           <p className="leading-relaxed">
-            Evaluation was executed following a chronological leave-last-out protocol on an 80/10/10 split across 24,000 fashion browsing sessions. Statistical significance was verified using a paired two-tailed Student&apos;s t-test with Bonferroni correction (p &lt; 0.001 vs strongest baseline SASRec). Gaze fixations were sampled at 30Hz and mapped to bounding boxes with a &plusmn;0.8&deg; visual angle tolerance.
+            Evaluation was executed following an offline session holdout protocol across 4 session-maturity cold-start stages (Stage 0: 0 actions, Stage 1: 1 action, Stage 2: 2–4 actions, Stage 3: 5+ actions) on the product catalog. Baseline models (Popularity, Content-Based, Item-Item Collaborative Filtering, Static Hybrid, and Session-Based) were evaluated on identical test splits with deterministic sorting tie-breakers (Random Seed = 42).
+          </p>
+          <p className="leading-relaxed">
+            Statistical testing was executed using a paired two-tailed Student&apos;s t-test across individual sessions: t(12) = 0.1467, p = 0.8566. Because sample size N=13 does not satisfy large-sample asymptotic power constraints (N &ge; 30), statistical significance is reported transparently as not yet achieved.
           </p>
           <div className="p-3 bg-[#18191d] rounded-lg border border-[#27272a] font-mono tabular-nums text-[11px] text-[#71717a]">
-            Citation: SASHER Architecture — Secure Adaptive Session-Aware Hybrid E-Commerce Recommendation System (2026).
+            Artifact: /data/experiment_results.json &middot; Generated via scripts/run_experiments.ts
           </div>
         </div>
       )}
@@ -145,8 +148,8 @@ export const ResearchDashboardView: React.FC = () => {
           <span className="font-editorial text-4xl text-[#f4f4f5] block">
             {RESEARCH_METRICS.precision10}
           </span>
-          <span className="text-[11px] font-mono tabular-nums text-[#10b981] mt-1 block">
-            +10.9% over SASRec baseline
+          <span className="text-[11px] font-mono tabular-nums text-[#a1a1aa] mt-1 block">
+            Empirical Top-10 precision
           </span>
         </div>
 
@@ -158,19 +161,19 @@ export const ResearchDashboardView: React.FC = () => {
             {RESEARCH_METRICS.recall10}
           </span>
           <span className="text-[11px] font-mono tabular-nums text-[#10b981] mt-1 block">
-            +11.4% hit rate coverage
+            51.3% relevant item coverage
           </span>
         </div>
 
         <div className="p-5 bg-[#121316] border border-[#27272a] rounded-2xl">
           <span className="text-[10px] font-mono tabular-nums uppercase text-[#71717a] block mb-1">
-            MAP@10
+            MAP@10 / MRR
           </span>
           <span className="font-editorial text-4xl text-[#f4f4f5] block">
             {RESEARCH_METRICS.map10}
           </span>
-          <span className="text-[11px] font-mono tabular-nums text-[#10b981] mt-1 block">
-            Mean Average Precision
+          <span className="text-[11px] font-mono tabular-nums text-[#a1a1aa] mt-1 block">
+            Mean Reciprocal Rank: 0.3533
           </span>
         </div>
 
@@ -181,8 +184,8 @@ export const ResearchDashboardView: React.FC = () => {
           <span className="font-editorial text-4xl text-[#e2a876] block">
             {RESEARCH_METRICS.ndcg10}
           </span>
-          <span className="text-[11px] font-mono tabular-nums text-[#10b981] mt-1 block">
-            p = {RESEARCH_METRICS.pValueVsBaseline} (t-test)
+          <span className="text-[11px] font-mono tabular-nums text-[#e2a876] mt-1 block">
+            p = {RESEARCH_METRICS.pValueVsBaseline} (t=0.15, df=12)
           </span>
         </div>
       </div>

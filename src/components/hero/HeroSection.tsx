@@ -9,9 +9,10 @@ interface HeroSectionProps {
   onExplore: () => void;
   onHowItWorks: () => void;
   onOpenTelemetry?: () => void;
+  onStartStyleQuiz?: () => void;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onHowItWorks, onOpenTelemetry }) => {
+export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onHowItWorks, onOpenTelemetry, onStartStyleQuiz }) => {
   const { sessionIntent, hybridWeights, isEyeTrackingActive, recommendedProducts, setIsVisualIntentModalOpen } = useSasher();
   const { isAuthenticated, openSignInModal, user } = useAuth();
 
@@ -65,13 +66,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onHowItWork
                 <ArrowRight className="w-3.5 h-3.5 text-[#09090b]" />
               </button>
 
-              {/* Secondary CTA: "Discover Your Style" */}
+              {/* Secondary CTA: "Discover Your Style" / Style Profile */}
               <button
-                onClick={onHowItWorks}
+                onClick={() => {
+                  if (onStartStyleQuiz) onStartStyleQuiz();
+                  else onHowItWorks();
+                }}
                 className="px-7 py-3.5 bg-[#141417] hover:bg-[#1a1a1f] border border-white/[0.12] hover:border-[#d4a373]/60 text-[#f4f4f5] rounded-full text-xs font-medium tracking-wider transition-all cursor-pointer flex items-center gap-2"
               >
                 <Compass className="w-3.5 h-3.5 text-[#d4a373]" />
-                <span>Discover Your Style</span>
+                <span>Start Style Quiz</span>
               </button>
 
               {/* Visual Intent Status Badge */}
@@ -127,6 +131,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExplore, onHowItWork
                     src={heroFeaturedProduct?.imageUrl}
                     alt={heroFeaturedProduct?.name || 'Featured Luxury Garment'}
                     referrerPolicy="no-referrer"
+                    loading="eager"
+                    fetchPriority="high"
                     className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700 opacity-95"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';

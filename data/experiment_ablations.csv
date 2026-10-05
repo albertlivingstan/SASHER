@@ -1,0 +1,8 @@
+configuration,ndcg10,precision10,recall10,delta_ndcg_percent,active_features,description
+"Full SASHER (Adaptive Hybrid)",0.341,0.1538,0.5128,0,"Adaptive Weights;Session Intent;Dwell Time;Content CBF;Collaborative CF", "Complete proposed system with dynamic maturity scaling and intent concentration."
+"w/o Adaptive Weighting (Static Weights)",0.3378,0.1615,0.5385,-0.94,"Session Intent;Dwell Time;Content CBF;Collaborative CF", "Freezes fusion weights to fixed static proportions across all session stages."
+"w/o Session Intent Induction",0.3371,0.1615,0.5385,-1.14,"Adaptive Weights;Dwell Time;Content CBF;Collaborative CF", "Removes category concentration and intent guidance from candidate ranking."
+"w/o Dwell-Time Attention Signal",0.3277,0.1538,0.5128,-3.9,"Adaptive Weights;Session Intent;Content CBF;Collaborative CF", "Disables implicit dwell-time modulation (USE_DWELL_SIGNAL = false)."
+"w/o Content Attribute Model (β = 0)",0.3329,0.1462,0.4872,-2.38,"Adaptive Weights;Session Intent;Dwell Time;Collaborative CF", "Removes dense aesthetic and fabric cosine similarity."
+"w/o Collaborative Model (γ = 0)",0.3299,0.1538,0.5128,-3.26,"Adaptive Weights;Session Intent;Dwell Time;Content CBF", "Eliminates co-exploration outfit compatibility graphs."
+"Static 50/50 Content/Popularity Baseline",0.3378,0.1615,0.5385,-0.94,"Content CBF;Popularity Prior", "Standard naive baseline with no session awareness."

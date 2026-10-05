@@ -97,6 +97,7 @@ export async function fetchUserProfileFromFirestore(userId: string): Promise<Sto
     return null;
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, path);
+    return null;
   }
 }
 

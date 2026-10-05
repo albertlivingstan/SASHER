@@ -12,7 +12,9 @@ import {
   Clock, 
   Sparkles,
   Search,
-  Sliders
+  Sliders,
+  Flame,
+  Layers
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,8 +33,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { setActiveCategory, setGenderFilter } = useSasher();
 
   const navItems = [
+    { id: 'for_you', label: 'For You', icon: Sparkles },
     { id: 'discover', label: 'Home', icon: Home },
     { id: 'browse', label: 'Browse', icon: Grid },
+    { id: 'wardrobe', label: 'Wardrobe', icon: Layers },
+    { id: 'swipe_train', label: 'Swipe Train', icon: Flame },
     { id: 'shopping', label: 'Shopping', icon: ShoppingBag },
     { id: 'research', label: 'Research', icon: Sliders },
     { id: 'insights', label: 'Analytics', icon: BarChart3 },

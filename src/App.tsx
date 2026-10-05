@@ -33,14 +33,20 @@ import { BrowseView } from './components/browse/BrowseView';
 import { SplashScreen } from './components/ui/SplashScreen';
 import { VisualIntentModal } from './components/eyetracking/VisualIntentModal';
 import { CalibrationModal } from './components/eyetracking/CalibrationModal';
+import { ForYouFeedView } from './components/feed/ForYouFeedView';
+import { SwipeToTrainView } from './components/training/SwipeToTrainView';
+import { VirtualWardrobeView } from './components/wardrobe/VirtualWardrobeView';
+import { StyleQuizModal } from './components/onboarding/StyleQuizModal';
+import { AdaptiveAnalyticsDashboardView } from './components/analytics/AdaptiveAnalyticsDashboardView';
 import { INITIAL_PRODUCTS } from './data/products';
 import { RecommendedProduct, CompletedOrder } from './types';
 import { Sparkles, Eye, X } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
-  const [currentTab, setCurrentTab] = useState<string>('discover');
+  const [currentTab, setCurrentTab] = useState<string>('for_you');
   const [selectedProductForModal, setSelectedProductForModal] = useState<RecommendedProduct | null>(null);
+  const [isStyleQuizOpen, setIsStyleQuizOpen] = useState(false);
 
   const {
     setExplanationModalProduct,
@@ -180,6 +186,13 @@ const MainLayout: React.FC = () => {
         <VisualIntentModal />
         <CalibrationModal />
 
+        {/* Style Quiz & Onboarding Modal */}
+        <StyleQuizModal
+          isOpen={isStyleQuizOpen}
+          onClose={() => setIsStyleQuizOpen(false)}
+          onProfileCreated={() => setCurrentTab('for_you')}
+        />
+
         {/* User Account Profile & Order History Modal */}
         <UserProfileModal
           isOpen={isUserProfileOpen}
@@ -256,6 +269,30 @@ const MainLayout: React.FC = () => {
 
         {/* Tab Routed Views */}
         <main className="flex-1">
+          {currentTab === 'for_you' && (
+            <ForYouFeedView
+              onSelectProduct={(p) => setSelectedProductForModal(p)}
+              onExplainProduct={(p) => setExplanationModalProduct(p)}
+              onOpenStyleQuiz={() => setIsStyleQuizOpen(true)}
+              onOpenSwipeTrain={() => setCurrentTab('swipe_train')}
+              onOpenWardrobe={() => setCurrentTab('wardrobe')}
+            />
+          )}
+
+          {currentTab === 'wardrobe' && (
+            <VirtualWardrobeView
+              onSelectProduct={(p) => setSelectedProductForModal(p as RecommendedProduct)}
+              onNavigateToCatalog={() => setCurrentTab('browse')}
+            />
+          )}
+
+          {currentTab === 'swipe_train' && (
+            <SwipeToTrainView
+              onFinishTraining={() => setCurrentTab('for_you')}
+              onExploreRecommendations={() => setCurrentTab('for_you')}
+            />
+          )}
+
           {currentTab === 'discover' && (
             <div>
               {/* Hero Section */}
@@ -263,6 +300,7 @@ const MainLayout: React.FC = () => {
                 onExplore={scrollToCatalog}
                 onHowItWorks={scrollToHowItWorks}
                 onOpenTelemetry={() => setCurrentTab('telemetry')}
+                onStartStyleQuiz={() => setIsStyleQuizOpen(true)}
               />
 
               {/* Catalog Grid with Compact Filter Bar & 5 Columns */}
@@ -339,11 +377,11 @@ const MainLayout: React.FC = () => {
 
           {currentTab === 'gaze_studio' && <GazeTrackingStudioView />}
 
-          {currentTab === 'evaluation_analytics' && <EvaluationAnalyticsView />}
+          {currentTab === 'evaluation_analytics' && <AdaptiveAnalyticsDashboardView />}
 
           {currentTab === 'platform_analytics' && <PlatformAnalyticsView />}
 
-          {currentTab === 'insights' && <AiInsightsView />}
+          {currentTab === 'insights' && <AdaptiveAnalyticsDashboardView />}
 
           {currentTab === 'research' && <ResearchDashboardView />}
         </main>

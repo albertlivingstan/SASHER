@@ -31,6 +31,7 @@ export interface Product {
   description: string;
   material: string;
   fit: string;
+  silhouette?: string;
   rating: number | null; // Nullable when no external dataset is connected
   reviewCount: number | null; // Nullable when no external dataset is connected
   stock: number;

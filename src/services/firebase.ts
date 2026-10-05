@@ -47,9 +47,24 @@ export interface FirestoreErrorInfo {
   };
 }
 
-export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): void {
+  const errMsg = error instanceof Error ? error.message : String(error);
+  const errCode = (error as { code?: string })?.code;
+
+  // Gracefully handle transient offline or backend connectivity unavailability without crashing
+  if (
+    errCode === 'unavailable' ||
+    errMsg.includes('unavailable') ||
+    errMsg.includes('Could not reach Cloud Firestore') ||
+    errMsg.includes('the client is offline') ||
+    errMsg.includes('offline mode')
+  ) {
+    console.warn(`Firestore operating in offline cache mode for ${operationType} on [${path}].`);
+    return;
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errMsg,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -65,18 +80,16 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
 }
 
-export async function testConnection(): Promise<void> {
+export async function testConnection(): Promise<boolean> {
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    const snap = await getDocFromServer(doc(db, 'test', 'connection'));
+    return snap.exists();
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
-    }
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.warn('Firestore server connection check skipped or offline:', errMsg);
+    return false;
   }
 }
 
-// Initial boot connection test
-testConnection();

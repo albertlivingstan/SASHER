@@ -19,7 +19,9 @@ import {
   Eye,
   Smile,
   Volume2,
-  VolumeX
+  VolumeX,
+  Mic,
+  MicOff
 } from 'lucide-react';
 
 interface FashionAssistantChatbotProps {
@@ -40,7 +42,43 @@ export const FashionAssistantChatbot: React.FC<FashionAssistantChatbotProps> = (
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [isVoiceMuted, setIsVoiceMuted] = useState(true);
+  const [isListening, setIsListening] = useState(false);
   const [emotion, setEmotion] = useState<ConsultantEmotion>('welcoming');
+
+  const toggleListening = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognitionAPI();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setIsListening(false);
+        if (transcript) {
+          handleSend(`[Voice Command + Gaze Context]: ${transcript}`);
+        }
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+
+      recognition.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
   
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
@@ -416,10 +454,23 @@ export const FashionAssistantChatbot: React.FC<FashionAssistantChatbotProps> = (
                     type="text"
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    placeholder={activeModalProduct ? `Ask about ${activeModalProduct.name}...` : "Ask a fashion or styling question..."}
+                    placeholder={isListening ? "Listening with gaze context..." : (activeModalProduct ? `Ask about ${activeModalProduct.name}...` : "Ask a fashion or styling question...")}
                     className="flex-1 bg-[#121316] border border-[#27272a] focus:border-[#ff6b1a] rounded-xl px-3 py-2 text-xs text-[#f5f5f7] placeholder-[#71717a] outline-none"
                     maxLength={300}
                   />
+
+                  <button
+                    type="button"
+                    onClick={toggleListening}
+                    className={`p-2 rounded-xl transition-all cursor-pointer border ${
+                      isListening
+                        ? 'bg-red-500 text-white border-red-400 animate-pulse'
+                        : 'bg-[#121316] text-[#a1a1aa] border-[#27272a] hover:text-white hover:border-[#ff6b1a]'
+                    }`}
+                    title="Multimodal Voice & Gaze Control"
+                  >
+                    {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                  </button>
 
                   <button
                     type="submit"

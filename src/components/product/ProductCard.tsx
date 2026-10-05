@@ -17,6 +17,8 @@ import {
   Route
 } from 'lucide-react';
 import { gazeHeatmapService, ProductGazeHeatmapData } from '../../services/gazeHeatmapService';
+import { DislikeReasonModal } from '../feedback/DislikeReasonModal';
+import { adaptiveEngine } from '../../services/adaptiveEngine';
 
 interface ProductCardProps {
   product: RecommendedProduct;
@@ -50,6 +52,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [isDislikeModalOpen, setIsDislikeModalOpen] = useState(false);
+
+  const explainableInfo = React.useMemo(() => {
+    return adaptiveEngine.generateExplainableReasons(product);
+  }, [product]);
 
   const isWishlisted = Boolean(product.wishlist || product.isWishlisted || wishlistIds.has(product.id));
   const isBeingGazed = currentGazeTarget?.productId === product.id;
@@ -107,10 +114,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const handleNotInterested = (e: React.MouseEvent) => {
     e.stopPropagation();
-    recordFeedback(product.id, 'DISLIKE');
+    setIsDislikeModalOpen(true);
   };
 
-  if (currentFeedback === 'DISLIKE') {
+  if (currentFeedback === 'DISLIKE' && !isDislikeModalOpen) {
     return null; // Suppress immediately from view
   }
 
@@ -388,15 +395,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
         <div className="space-y-1 text-left">
           <div className="flex items-center justify-between text-xs text-[#a1a1aa]">
-            <span className="tracking-wider uppercase text-[10px] font-mono font-medium text-[#71717a]">
-              {product.brand}
-            </span>
+            <div className="flex items-center gap-1.5 truncate max-w-[55%]">
+              <span className="tracking-wider uppercase text-[10px] font-mono font-medium text-[#71717a] truncate">
+                {product.brand}
+              </span>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-[#d4a373] border border-white/[0.08] shrink-0">
+                {explainableInfo.retailer}
+              </span>
+            </div>
             
-            {/* Match score */}
-            <span className="text-[10px] font-mono text-[#d4a373] flex items-center gap-1">
+            {/* "Why am I seeing this?" Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onExplain) onExplain(product);
+                else onSelect(product);
+              }}
+              className="text-[10px] font-mono text-[#d4a373] hover:text-[#f4f4f5] bg-[#d4a373]/15 hover:bg-[#d4a373]/25 px-2 py-0.5 rounded-lg border border-[#d4a373]/30 flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+              title="Why am I seeing this? (Explainable AI)"
+            >
               <Sparkles className="w-2.5 h-2.5" />
-              {product.explanation?.matchScore || 92}% Match
-            </span>
+              <span>{explainableInfo.matchScore}% · Why?</span>
+            </button>
           </div>
 
           <h3 className="text-sm font-medium text-[#f4f4f5] leading-snug line-clamp-1 group-hover:text-[#d4a373] transition-colors">
@@ -475,6 +495,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Dislike Fine-Grained Feedback Modal */}
+      {isDislikeModalOpen && (
+        <DislikeReasonModal
+          product={product}
+          isOpen={isDislikeModalOpen}
+          onClose={() => {
+            setIsDislikeModalOpen(false);
+            recordFeedback(product.id, 'DISLIKE');
+          }}
+        />
+      )}
     </div>
   );
 };

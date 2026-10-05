@@ -57,6 +57,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
   const navLinks = [
     { 
+      label: '✨ For You', 
+      action: () => { 
+        onSelectTab('for_you'); 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+      } 
+    },
+    { 
       label: 'Home', 
       action: () => { 
         setGenderFilter('All'); 
@@ -76,20 +83,16 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
       } 
     },
     { 
-      label: 'Women', 
+      label: 'Wardrobe', 
       action: () => { 
-        setGenderFilter('Women'); 
-        setActiveCategory('All');
-        onSelectTab('browse'); 
+        onSelectTab('wardrobe'); 
         window.scrollTo({ top: 0, behavior: 'smooth' }); 
       } 
     },
     { 
-      label: 'Men', 
+      label: 'Swipe Train', 
       action: () => { 
-        setGenderFilter('Men'); 
-        setActiveCategory('All');
-        onSelectTab('browse'); 
+        onSelectTab('swipe_train'); 
         window.scrollTo({ top: 0, behavior: 'smooth' }); 
       } 
     },
