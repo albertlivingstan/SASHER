@@ -20,6 +20,7 @@ import { adaptiveEngine } from '../../services/adaptiveEngine';
 import { useSasher } from '../../context/SasherContext';
 import { OfflineEvaluationMetricRow } from '../../types/adaptiveFashion';
 import { TelemetryTrendChart } from '../research/TelemetryTrendChart';
+import { RealTimeMetricsSubComponent } from './RealTimeMetricsSubComponent';
 
 interface AdaptiveAnalyticsDashboardViewProps {
   onOpenPrivacyModal?: () => void;
@@ -33,7 +34,7 @@ export const AdaptiveAnalyticsDashboardView: React.FC<AdaptiveAnalyticsDashboard
   const metrics = adaptiveEngine.getOfflineEvaluationMetrics();
   const { wishlistIds, cart, completedOrders } = useSasher();
 
-  const [activeTab, setActiveTab] = useState<'user_style' | 'research_evaluation' | 'privacy'>('user_style');
+  const [activeTab, setActiveTab] = useState<'user_style' | 'research_evaluation' | 'real_time' | 'privacy'>('user_style');
   const [dataDeletedToast, setDataDeletedToast] = useState(false);
 
   const handleDeleteAllData = () => {
@@ -69,11 +70,11 @@ export const AdaptiveAnalyticsDashboardView: React.FC<AdaptiveAnalyticsDashboard
           </p>
         </div>
 
-        {/* Tab Switcher: [ User Style Analytics ] [ Research Evaluation (Scopus) ] [ Privacy & Data Control ] */}
-        <div className="flex items-center p-1 rounded-2xl bg-[#141518] border border-white/[0.08] text-xs font-mono">
+        {/* Tab Switcher */}
+        <div className="flex items-center p-1 rounded-2xl bg-[#141518] border border-white/[0.08] text-xs font-mono overflow-x-auto">
           <button
             onClick={() => setActiveTab('user_style')}
-            className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'user_style'
                 ? 'bg-[#d4a373] text-[#09090b] font-bold shadow'
                 : 'text-[#a1a1aa] hover:text-[#f4f4f5]'
@@ -84,7 +85,7 @@ export const AdaptiveAnalyticsDashboardView: React.FC<AdaptiveAnalyticsDashboard
 
           <button
             onClick={() => setActiveTab('research_evaluation')}
-            className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'research_evaluation'
                 ? 'bg-[#d4a373] text-[#09090b] font-bold shadow'
                 : 'text-[#a1a1aa] hover:text-[#f4f4f5]'
@@ -94,8 +95,20 @@ export const AdaptiveAnalyticsDashboardView: React.FC<AdaptiveAnalyticsDashboard
           </button>
 
           <button
+            onClick={() => setActiveTab('real_time')}
+            className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'real_time'
+                ? 'bg-[#d4a373] text-[#09090b] font-bold shadow'
+                : 'text-[#a1a1aa] hover:text-[#f4f4f5]'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Real-Time Metrics
+          </button>
+
+          <button
             onClick={() => setActiveTab('privacy')}
-            className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'privacy'
                 ? 'bg-[#d4a373] text-[#09090b] font-bold shadow'
                 : 'text-[#a1a1aa] hover:text-[#f4f4f5]'
@@ -374,6 +387,13 @@ export const AdaptiveAnalyticsDashboardView: React.FC<AdaptiveAnalyticsDashboard
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* TAB 4: REAL-TIME ROLLING TELEMETRY & METRICS */}
+      {activeTab === 'real_time' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <RealTimeMetricsSubComponent />
         </div>
       )}
 

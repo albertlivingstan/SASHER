@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-05T01:35:07.684Z",
+  "timestamp": "2026-10-15T13:08:48.327Z",
   "randomSeed": 42,
   "datasetInfo": {
     "totalProducts": 66,
@@ -16,7 +16,7 @@
       "ndcg10": 0.3402,
       "mrr": 0.3462,
       "hitRate": 0.8462,
-      "latencyMs": 1.7,
+      "latencyMs": 3.1,
       "sampleCount": 13
     },
     "content_based": {
@@ -28,7 +28,7 @@
       "ndcg10": 0.2885,
       "mrr": 0.313,
       "hitRate": 0.7692,
-      "latencyMs": 0.7,
+      "latencyMs": 1.4,
       "sampleCount": 13
     },
     "collaborative": {
@@ -40,7 +40,7 @@
       "ndcg10": 0.359,
       "mrr": 0.3658,
       "hitRate": 1,
-      "latencyMs": 0.4,
+      "latencyMs": 0.7,
       "sampleCount": 13
     },
     "static_hybrid": {
@@ -52,7 +52,7 @@
       "ndcg10": 0.3378,
       "mrr": 0.3083,
       "hitRate": 0.8462,
-      "latencyMs": 0.4,
+      "latencyMs": 0.7,
       "sampleCount": 13
     },
     "session_based": {
@@ -64,7 +64,7 @@
       "ndcg10": 0.3133,
       "mrr": 0.3683,
       "hitRate": 0.6923,
-      "latencyMs": 0.3,
+      "latencyMs": 0.8,
       "sampleCount": 13
     },
     "sasher_adaptive": {
@@ -76,7 +76,7 @@
       "ndcg10": 0.341,
       "mrr": 0.3533,
       "hitRate": 0.7692,
-      "latencyMs": 0.4,
+      "latencyMs": 0.8,
       "sampleCount": 13
     }
   },
@@ -96,7 +96,7 @@
           "ndcg10": 0.5711,
           "mrr": 0.625,
           "hitRate": 1,
-          "latencyMs": 0.3,
+          "latencyMs": 0.4,
           "sampleCount": 4
         },
         "contentBased": {
@@ -108,7 +108,7 @@
           "ndcg10": 0.5811,
           "mrr": 0.675,
           "hitRate": 1,
-          "latencyMs": 0.4,
+          "latencyMs": 0.6,
           "sampleCount": 4
         },
         "collaborative": {
@@ -144,7 +144,7 @@
           "ndcg10": 0.5811,
           "mrr": 0.675,
           "hitRate": 1,
-          "latencyMs": 0.2,
+          "latencyMs": 0.3,
           "sampleCount": 4
         },
         "sasher": {
@@ -177,7 +177,7 @@
           "ndcg10": 0.323,
           "mrr": 0.2833,
           "hitRate": 1,
-          "latencyMs": 0.3,
+          "latencyMs": 0.5,
           "sampleCount": 4
         },
         "contentBased": {
@@ -189,7 +189,7 @@
           "ndcg10": 0.2256,
           "mrr": 0.2,
           "hitRate": 0.75,
-          "latencyMs": 0.2,
+          "latencyMs": 0.3,
           "sampleCount": 4
         },
         "collaborative": {
@@ -201,7 +201,7 @@
           "ndcg10": 0.2862,
           "mrr": 0.1653,
           "hitRate": 1,
-          "latencyMs": 0.8,
+          "latencyMs": 0.5,
           "sampleCount": 4
         },
         "staticHybrid": {
@@ -213,7 +213,7 @@
           "ndcg10": 0.2637,
           "mrr": 0.1563,
           "hitRate": 0.75,
-          "latencyMs": 0.3,
+          "latencyMs": 0.7,
           "sampleCount": 4
         },
         "sessionBased": {
@@ -225,7 +225,7 @@
           "ndcg10": 0.185,
           "mrr": 0.1528,
           "hitRate": 0.5,
-          "latencyMs": 0.2,
+          "latencyMs": 0.6,
           "sampleCount": 4
         },
         "sasher": {
@@ -237,7 +237,7 @@
           "ndcg10": 0.2584,
           "mrr": 0.169,
           "hitRate": 0.75,
-          "latencyMs": 0.2,
+          "latencyMs": 0.8,
           "sampleCount": 4
         }
       },
@@ -258,7 +258,7 @@
           "ndcg10": 0.2266,
           "mrr": 0.2333,
           "hitRate": 0.6667,
-          "latencyMs": 0.3,
+          "latencyMs": 0.5,
           "sampleCount": 3
         },
         "contentBased": {
@@ -270,7 +270,7 @@
           "ndcg10": 0.1253,
           "mrr": 0.1481,
           "hitRate": 0.6667,
-          "latencyMs": 0.2,
+          "latencyMs": 0.5,
           "sampleCount": 3
         },
         "collaborative": {
@@ -282,7 +282,7 @@
           "ndcg10": 0.2737,
           "mrr": 0.3167,
           "hitRate": 1,
-          "latencyMs": 0.2,
+          "latencyMs": 0.5,
           "sampleCount": 3
         },
         "staticHybrid": {
@@ -294,7 +294,7 @@
           "ndcg10": 0.2723,
           "mrr": 0.1833,
           "hitRate": 1,
-          "latencyMs": 0.2,
+          "latencyMs": 0.3,
           "sampleCount": 3
         },
         "sessionBased": {
@@ -306,7 +306,7 @@
           "ndcg10": 0.1797,
           "mrr": 0.1587,
           "hitRate": 0.6667,
-          "latencyMs": 0.2,
+          "latencyMs": 0.7,
           "sampleCount": 3
         },
         "sasher": {
@@ -318,7 +318,7 @@
           "ndcg10": 0.2154,
           "mrr": 0.1389,
           "hitRate": 0.6667,
-          "latencyMs": 0.3,
+          "latencyMs": 1.2,
           "sampleCount": 3
         }
       },
@@ -339,7 +339,7 @@
           "ndcg10": 0.0836,
           "mrr": 0.0833,
           "hitRate": 0.5,
-          "latencyMs": 0.3,
+          "latencyMs": 0.8,
           "sampleCount": 2
         },
         "contentBased": {
@@ -351,7 +351,7 @@
           "ndcg10": 0.074,
           "mrr": 0.0625,
           "hitRate": 0.5,
-          "latencyMs": 0.4,
+          "latencyMs": 0.6,
           "sampleCount": 2
         },
         "collaborative": {
@@ -363,7 +363,7 @@
           "ndcg10": 0.188,
           "mrr": 0.2222,
           "hitRate": 1,
-          "latencyMs": 0.4,
+          "latencyMs": 0.6,
           "sampleCount": 2
         },
         "staticHybrid": {
@@ -375,7 +375,7 @@
           "ndcg10": 0.1173,
           "mrr": 0.1667,
           "hitRate": 0.5,
-          "latencyMs": 0.3,
+          "latencyMs": 1.1,
           "sampleCount": 2
         },
         "sessionBased": {
@@ -387,7 +387,7 @@
           "ndcg10": 0.2346,
           "mrr": 0.5,
           "hitRate": 0.5,
-          "latencyMs": 0.4,
+          "latencyMs": 0.6,
           "sampleCount": 2
         },
         "sasher": {
@@ -399,7 +399,7 @@
           "ndcg10": 0.2346,
           "mrr": 0.5,
           "hitRate": 0.5,
-          "latencyMs": 0.3,
+          "latencyMs": 1.2,
           "sampleCount": 2
         }
       },

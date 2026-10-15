@@ -15,7 +15,8 @@ import {
   UserPreferenceProfile,
   HybridRecommendationWeights,
   OutfitLook,
-  ProductFeedbackType
+  ProductFeedbackType,
+  ShoppingMission
 } from '../types';
 import { 
   DEFAULT_HYBRID_WEIGHTS,
@@ -125,6 +126,13 @@ interface SasherContextType {
   // Adaptive Notification Toast
   recentAdaptiveNotification: string | null;
   dismissAdaptiveNotification: () => void;
+
+  // Shopping Mission State Manager
+  activeMission: ShoppingMission;
+  startNewShoppingMission: (purpose: string, maxBudget?: number) => void;
+  dismissItemFromMission: (productId: string) => void;
+  resetMission: () => void;
+  checkInterestShift: () => void;
 }
 
 const SasherContext = createContext<SasherContextType | undefined>(undefined);
@@ -152,6 +160,70 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [interactions, setInteractions] = useState<InteractionEvent[]>([]);
   const [sessionStartTime] = useState<number>(Date.now());
   const [recentAdaptiveNotification, setRecentAdaptiveNotification] = useState<string | null>(null);
+
+  // Shopping Mission State Manager
+  const [activeMission, setActiveMission] = useState<ShoppingMission>({
+    purpose: 'Everyday Casuals & Workwear',
+    maxBudget: 25000,
+    missionStartTime: Date.now(),
+    dismissedProductIds: [],
+    isLockedToMission: true,
+    interestShiftDetected: false,
+    suggestedPurpose: undefined
+  });
+
+  const startNewShoppingMission = useCallback((purpose: string, maxBudget = 25000) => {
+    setActiveMission({
+      purpose,
+      maxBudget,
+      missionStartTime: Date.now(),
+      dismissedProductIds: [],
+      isLockedToMission: true,
+      interestShiftDetected: false,
+      suggestedPurpose: undefined
+    });
+    setRecentAdaptiveNotification(`Started shopping mission: "${purpose}" (Budget: ₹${maxBudget}). Earlier history isolated.`);
+  }, []);
+
+  const dismissItemFromMission = useCallback((productId: string) => {
+    setActiveMission(prev => ({
+      ...prev,
+      dismissedProductIds: [...prev.dismissedProductIds, productId]
+    }));
+    setRecentAdaptiveNotification(`Item dismissed from mission. Positive influence removed.`);
+  }, []);
+
+  const resetMission = useCallback(() => {
+    setActiveMission({
+      purpose: 'Everyday Casuals & Workwear',
+      maxBudget: 25000,
+      missionStartTime: Date.now(),
+      dismissedProductIds: [],
+      isLockedToMission: true,
+      interestShiftDetected: false,
+      suggestedPurpose: undefined
+    });
+  }, []);
+
+  const checkInterestShift = useCallback(() => {
+    const recentInteractions = interactions.filter(ev => ev.timestamp >= activeMission.missionStartTime);
+    const occasionEvents = recentInteractions.filter(ev => ev.category === 'Dresses' || ev.category === 'Tailoring' || ev.category === 'Outerwear').length;
+    const everydayEvents = recentInteractions.filter(ev => ev.category === 'Tops' || ev.category === 'Trousers' || ev.category === 'Knitwear').length;
+
+    if (activeMission.purpose.toLowerCase().includes('everyday') && occasionEvents >= 2) {
+      setActiveMission(prev => ({
+        ...prev,
+        interestShiftDetected: true,
+        suggestedPurpose: 'Occasion Wear & Evening Tailoring'
+      }));
+    } else if (activeMission.purpose.toLowerCase().includes('occasion') && everydayEvents >= 2) {
+      setActiveMission(prev => ({
+        ...prev,
+        interestShiftDetected: true,
+        suggestedPurpose: 'Everyday Casuals & Comfort Wear'
+      }));
+    }
+  }, [interactions, activeMission.missionStartTime, activeMission.purpose]);
   
   // Eye-tracking state
   const [isEyeTrackingActive, setIsEyeTrackingActive] = useState<boolean>(() => {
@@ -552,7 +624,8 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       user?.savedPreferences || [],
       searchQuery,
       activeGazeId,
-      products.length
+      products.length,
+      activeMission
     );
 
     // Sync live wishlist status
@@ -565,7 +638,7 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isWishlisted: inWishlist
       };
     });
-  }, [products, interactions, user?.savedPreferences, searchQuery, isEyeTrackingActive, currentGazeTarget?.productId, wishlistIds, rankingConfigVersion]);
+  }, [products, interactions, user?.savedPreferences, searchQuery, isEyeTrackingActive, currentGazeTarget?.productId, wishlistIds, rankingConfigVersion, activeMission]);
 
   // Get similar products for Quick View / Complete Look
   const getSimilarProducts = useCallback((product: Product, limit = 4): RecommendedProduct[] => {
@@ -923,7 +996,14 @@ export const SasherProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         completeOrder,
         clearCart,
         recentAdaptiveNotification,
-        dismissAdaptiveNotification
+        dismissAdaptiveNotification,
+
+        // Shopping Mission State Manager
+        activeMission,
+        startNewShoppingMission,
+        dismissItemFromMission,
+        resetMission,
+        checkInterestShift
       }}
     >
       {children}

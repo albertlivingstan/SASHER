@@ -359,4 +359,14 @@ export interface ModelAblationResult {
   isProposedArchitecture?: boolean;
 }
 
+export interface ShoppingMission {
+  purpose: string;
+  maxBudget: number;
+  missionStartTime: number;
+  dismissedProductIds: string[];
+  isLockedToMission: boolean;
+  interestShiftDetected: boolean;
+  suggestedPurpose?: string;
+}
+
 

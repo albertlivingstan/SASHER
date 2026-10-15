@@ -3,6 +3,7 @@ import { RecommendedProduct, Product } from '../../types';
 import { useSasher } from '../../context/SasherContext';
 import { useAuth } from '../../context/AuthContext';
 import { feedbackService, ProductFeedback, ProductRatingSummary } from '../../services/feedbackService';
+import { generateAiOutfitCombinations, AiOutfitSuggestion } from '../../services/geminiService';
 import { 
   X, 
   Heart, 
@@ -66,6 +67,23 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [ratingSummary, setRatingSummary] = useState<ProductRatingSummary | null>(null);
   const [reviewsList, setReviewsList] = useState<ProductFeedback[]>([]);
+  const [aiOutfitLoading, setAiOutfitLoading] = useState(false);
+  const [aiOutfit, setAiOutfit] = useState<AiOutfitSuggestion | null>(null);
+  const [aiOutfitError, setAiOutfitError] = useState<string | null>(null);
+
+  const handleGenerateAiOutfit = async () => {
+    if (!product) return;
+    setAiOutfitLoading(true);
+    setAiOutfitError(null);
+    try {
+      const res = await generateAiOutfitCombinations(product, products);
+      setAiOutfit(res);
+    } catch {
+      setAiOutfitError('Failed to generate AI outfit ensemble. Please try again.');
+    } finally {
+      setAiOutfitLoading(false);
+    }
+  };
 
   // Load verified feedback summary for this product
   useEffect(() => {
@@ -79,6 +97,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       setFeedbackError(null);
       setSelectedImageIdx(0);
       setQuantity(1);
+      setAiOutfit(null);
+      setAiOutfitError(null);
     }
   }, [product]);
 
@@ -540,6 +560,135 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               </div>
             )}
+
+            {/* AI ASSISTANT: CUSTOM FULL OUTFIT COMBINATIONS (3+ ITEMS) */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#181512] to-[#121316] border border-[#d4a373]/40 space-y-4 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#d4a373] animate-pulse" />
+                    <h4 className="font-editorial text-base sm:text-lg text-[#f4f4f5]">AI Assistant: Custom Outfit Ensemble</h4>
+                  </div>
+                  <p className="text-[11px] text-[#a1a1aa]">
+                    Powered by Gemini AI. Generates a fully coordinated 3+ item look ensuring color palette and stylistic coherence.
+                  </p>
+                </div>
+
+                {!aiOutfit && (
+                  <button
+                    onClick={handleGenerateAiOutfit}
+                    disabled={aiOutfitLoading}
+                    className="px-4 py-2.5 rounded-xl bg-[#d4a373] hover:bg-[#e2a876] disabled:opacity-50 text-[#09090b] text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-2 shadow-lg shrink-0"
+                  >
+                    {aiOutfitLoading ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-[#09090b] border-t-transparent rounded-full animate-spin" />
+                        <span>Styling Outfit...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Generate AI Outfit (3+ Items)</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {aiOutfitError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300">
+                  {aiOutfitError}
+                </div>
+              )}
+
+              {aiOutfit && (
+                <div className="space-y-4 pt-2 animate-in fade-in duration-300">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-[#0c0d0e] border border-white/[0.08]">
+                    <div>
+                      <span className="text-[10px] font-mono text-[#d4a373] uppercase tracking-wider block">AI CURATED ENSEMBLE</span>
+                      <h5 className="font-editorial text-sm text-[#f4f4f5]">{aiOutfit.outfitName}</h5>
+                    </div>
+                    {aiOutfit.colorPalette && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-mono text-[#71717a]">Palette:</span>
+                        {aiOutfit.colorPalette.map((hex, i) => (
+                          <span
+                            key={i}
+                            className="w-4 h-4 rounded-full border border-white/20 shadow-inner"
+                            style={{ backgroundColor: hex }}
+                            title={hex}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-[#d1d5db] leading-relaxed italic border-l-2 border-[#d4a373] pl-3">
+                    &ldquo;{aiOutfit.stylistRationale}&rdquo;
+                  </p>
+
+                  {/* 3+ Item Minimum Outfit Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {aiOutfit.items.map((item, idx) => (
+                      <div
+                        key={item.id + idx}
+                        onClick={() => onSelectSimilarProduct && onSelectSimilarProduct(item)}
+                        className={`p-2 rounded-xl bg-[#0c0d0e] border transition-all cursor-pointer group ${
+                          item.id === product.id ? 'border-[#d4a373]' : 'border-white/[0.06] hover:border-white/[0.2]'
+                        }`}
+                      >
+                        <div className="aspect-[3/4] rounded-lg overflow-hidden bg-[#18191d] mb-1.5 relative">
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/70 backdrop-blur text-[9px] font-mono text-[#d4a373]">
+                            Item #{idx + 1}
+                          </span>
+                        </div>
+                        <div className="text-[10px] font-mono text-[#71717a] uppercase">{item.category}</div>
+                        <div className="text-[11px] text-[#f4f4f5] truncate font-medium">{item.name}</div>
+                        <div className="text-[10px] font-mono text-[#d4a373] mt-0.5">{item.currency || '₹'}{item.price.toLocaleString('en-IN')}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {aiOutfit.stylingTips && aiOutfit.stylingTips.length > 0 && (
+                    <div className="space-y-1 text-xs text-[#a1a1aa] bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
+                      <span className="text-[10px] font-mono text-[#d4a373] uppercase tracking-wider block mb-1">Styling Notes</span>
+                      {aiOutfit.stylingTips.map((tip, idx) => (
+                        <div key={idx} className="flex items-start gap-1.5">
+                          <span className="text-[#d4a373]">•</span>
+                          <span>{tip}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex items-center justify-between border-t border-white/[0.06]">
+                    <span className="text-xs text-[#a1a1aa] font-mono">
+                      Ensemble Total ({aiOutfit.items.length} Items): <strong className="text-[#f4f4f5] font-bold">₹{aiOutfit.items.reduce((s, i) => s + i.price, 0).toLocaleString('en-IN')}</strong>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setAiOutfit(null)}
+                        className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-xs font-mono text-[#a1a1aa] transition-colors cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                      <button
+                        onClick={() => {
+                          aiOutfit.items.forEach(i => addToCart(i, 'M'));
+                          setAddedAnimation(true);
+                          setTimeout(() => setAddedAnimation(false), 2000);
+                        }}
+                        className="px-4 py-1.5 rounded-xl bg-[#d4a373] hover:bg-[#e2a876] text-xs font-mono font-bold text-[#09090b] transition-colors cursor-pointer flex items-center gap-1.5 shadow"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                        <span>Add Entire AI Look to Bag</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Product Reviews & Rating Submissions */}
             <div className="p-5 rounded-2xl bg-[#141518] border border-white/[0.08] space-y-4">

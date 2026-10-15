@@ -4,7 +4,8 @@ import {
   RecommendedProduct, 
   InteractionEvent, 
   CategoryType,
-  RecommendationExplanation
+  RecommendationExplanation,
+  ShoppingMission
 } from '../types';
 
 export interface RecommendationConfigWeights {
@@ -174,10 +175,15 @@ class RankingServiceImpl {
   private calculateCFScore(
     product: Product,
     interactions: InteractionEvent[],
-    userStatus: 'NEW_USER' | 'WARM_USER' | 'ACTIVE_USER'
+    userStatus: 'NEW_USER' | 'WARM_USER' | 'ACTIVE_USER',
+    activeMission?: ShoppingMission
   ): number {
-    if (userStatus === 'NEW_USER' && interactions.length === 0) {
-      // Uninformed prior based on general collaborative popularity density
+    // Logic Gate: Isolate collaborative filtering interactions based on mission start timestamp
+    const effectiveInteractions = activeMission && activeMission.isLockedToMission
+      ? interactions.filter(ev => ev.timestamp >= activeMission.missionStartTime)
+      : interactions;
+
+    if (userStatus === 'NEW_USER' && effectiveInteractions.length === 0) {
       return Math.min(0.85, Math.max(0.35, product.popularityScore * 0.7 + 0.2));
     }
 
@@ -185,7 +191,7 @@ class RankingServiceImpl {
     let cfSignal = 0;
     let totalInteractionsWeight = 0;
 
-    interactions.forEach(ev => {
+    effectiveInteractions.forEach(ev => {
       let weight = interaction_weights[ev.type.toLowerCase()] ?? 1.0;
       if (ev.type === 'EYE_GAZE' && ev.gazeWeight) {
         weight = ev.gazeWeight;
@@ -380,7 +386,8 @@ class RankingServiceImpl {
     interactions: InteractionEvent[],
     userPreferences: string[] = [],
     searchQuery: string = '',
-    activeGazeId: string | null = null
+    activeGazeId: string | null = null,
+    activeMission?: ShoppingMission
   ): HybridScoreBreakdown {
     const weights = this.config.weights;
     const W_SUM = 
@@ -401,7 +408,7 @@ class RankingServiceImpl {
     const userStatus = this.getUserColdStartStatus(interactions.length);
     const itemStatus = this.getItemColdStartStatus(product);
 
-    const cf = this.calculateCFScore(product, interactions, userStatus);
+    const cf = this.calculateCFScore(product, interactions, userStatus, activeMission);
     const cbf = this.calculateCBFScore(product, userPreferences, interactions);
     const session = this.calculateSessionScore(product, interactions, activeGazeId, searchQuery);
     const pop = this.calculatePopularityScore(product);
@@ -459,17 +466,24 @@ class RankingServiceImpl {
     userPreferences: string[] = [],
     searchQuery: string = '',
     activeGazeId: string | null = null,
-    topK?: number
+    topK?: number,
+    activeMission?: ShoppingMission
   ): RankedProductItem[] {
     const k = topK ?? this.config.ranking.top_k;
 
-    const scored = products.map(product => {
+    // Filter out dismissed items
+    const eligibleProducts = activeMission && activeMission.dismissedProductIds.length > 0
+      ? products.filter(p => !activeMission.dismissedProductIds.includes(p.id))
+      : products;
+
+    const scored = eligibleProducts.map(product => {
       const breakdown = this.calculateHybridScore(
         product,
         interactions,
         userPreferences,
         searchQuery,
-        activeGazeId
+        activeGazeId,
+        activeMission
       );
 
       const explanation: RecommendationExplanation = {
